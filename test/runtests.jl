@@ -21,7 +21,7 @@ using NodeCall, Test
         # Objects:
         # `object`
         @test typeof(node"{}") ≡ JsObject
-        @test typeof(node"[]"o) ≡ JsObject
+        @test typeof(node"[]"o) ≡ JsValue
         # `function`
         @test typeof(node"eval") ≡ JsFunction
 
@@ -57,7 +57,7 @@ using NodeCall, Test
 
     @testset "eval" begin
         Math = node"Math"
-        @type typeof(Math) ≡ JsObject
+        @test typeof(Math) ≡ JsObject
         @test typeof(Math.random()) ≡ Float64
         @test node"const b = [1, 2]" ≡ nothing
         node"""
@@ -96,7 +96,7 @@ using NodeCall, Test
 
     @testset "import" begin
         node"import path from 'path'"
-        path = nodeimport("path")
+        path = require("path")
         @test path ≡ node"path"
         @test path.resolve(".") ≡ abspath(".")
         node"const fs = require('fs')"

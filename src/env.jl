@@ -1,21 +1,35 @@
-using Pkg.Artifacts
+using libjlnode_jll
+import Random
 
-const node_exe_name = Sys.iswindows() ? "node.exe" : "node"
-const npm_exe_name = Sys.iswindows() ? "npm.cmd" : "npm"
-
-node_path() = get(ENV, "NODECALL_NODE_PATH", node_exe_name)
-
+const NapiEnv = Ptr{Cvoid}
 mutable struct NodeEnvironment
-    process::Base.Process
-    env::Ptr{Nothing}
+    env::NapiEnv
 end
 
-function new_env()
-    cmd = `$(node_path()) $bootstrap_script_path`
-    process = open(cmd)
-    env = Ptr{Nothing}(read(process, UInt64))
-    NodeEnvironment(process, env)
+const _GLOBAL_ENV = NodeEnvironment(C_NULL)
+global_env() = _GLOBAL_ENV
+
+function initialize!(env, addon_path)
+    @debug "Initializing NodeJS..."
+    _env = Ref{NapiEnv}()
+    ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
+    @assert ret == 0
+    env.env = _env[]
+    @show env
+    run(env, "globalThis.$(tmpvar_name) = {}")
+    Random.seed!(_GLOBAL_RNG)
+    @debug "NodeJS initialized..."
+    env
 end
 
-const _GLOBAL_ENV = Ref{NodeEnvironment}()
-global_env() = _GLOBAL_ENV[]
+function dispose(env)
+    @debug "Disposing NodeJS..."
+    ret = @ccall :libjlnode.dispose()::Cint
+    @assert ret == 0
+    @debug "NodeJS disposed..."
+end
+
+function __init__()
+    initialize!(_GLOBAL_ENV, jlnode_addon)
+    finalizer(dispose, _GLOBAL_ENV)
+end
