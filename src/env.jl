@@ -1,13 +1,12 @@
 using libjlnode_jll
 import Random
 
-const NapiEnv = Ptr{Cvoid}
-mutable struct NodeEnvironment
+mutable struct EnvironmentConfig
     env::NapiEnv
 end
 
-const _GLOBAL_ENV = NodeEnvironment(C_NULL)
-global_env() = _GLOBAL_ENV
+const _GLOBAL_ENV = EnvironmentConfig(C_NULL)
+global_env() = _GLOBAL_ENV.env
 
 function initialize!(env, addon_path)
     @debug "Initializing NodeJS..."
@@ -15,8 +14,7 @@ function initialize!(env, addon_path)
     ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
     @assert ret == 0
     env.env = _env[]
-    @show env
-    run(env, "globalThis.$(tmpvar_name) = {}")
+    run(_env[], "globalThis.$(tempvar_name) = {}")
     Random.seed!(_GLOBAL_RNG)
     @debug "NodeJS initialized..."
     env

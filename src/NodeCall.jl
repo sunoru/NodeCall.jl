@@ -1,12 +1,14 @@
 module NodeCall
 
 include("napi_types.jl")
+using .NapiTypes
+
 include("utils.jl")
 
-export NodeEnvironment
+export EnvironmentConfig
 include("env.jl")
 
-export NapiValue, JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol, JsObject, JsFunction
+export NodeValueTemp, NodeObject, JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol, JsObject, JsFunction
 include("types.jl")
 
 export value, node_value

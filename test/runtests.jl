@@ -16,12 +16,12 @@ using NodeCall, Test
         # `bigint`
         @test node"28227453635394322245338923n" ≡ 28227453635394322245338923
         # `symbol`
-        @test node"Symbol('sym')" ≡ :sym
+        @test node"Symbol.for('sym')" ≡ :sym
 
         # Objects:
         # `object`
         @test typeof(node"{}") ≡ JsObject
-        @test typeof(node"[]"o) ≡ JsValue
+        @test typeof(node"[]"o) ≡ NodeObject
         # `function`
         @test typeof(node"eval") ≡ JsFunction
 
