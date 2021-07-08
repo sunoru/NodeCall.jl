@@ -53,16 +53,17 @@ function _napi_value(v::AbstractArray, typedarray_type; copy_array=false)
     n = length(v)
     byte_length = sizeof(T) * n
     arraybuffer = if copy_array
-        @napi_call napi_create_external_arraybuffer(
-            v::Ptr{Cvoid}, byte_length::Csize_t,
-            C_NULL::NapiPointer, C_NULL::NapiPointer
-        )::NapiValue
-    else
         data = Ref{Ptr{Cvoid}}()
         ab = @napi_call napi_create_arraybuffer(byte_length::Csize_t, data::Ptr{Ptr{Cvoid}})::NapiValue
         @ccall memcpy(data[]::Ptr{Cvoid}, v::Ptr{Cvoid}, byte_length::Csize_t)::Ptr{Cvoid}
         ab
+    else
+        @napi_call napi_create_external_arraybuffer(
+            v::Ptr{Cvoid}, byte_length::Csize_t,
+            C_NULL::NapiPointer, C_NULL::NapiPointer
+        )::NapiValue
     end
+    @napi_call napi_create_typedarray(typedarray_type::NapiTypedArrayType, n::Csize_t, arraybuffer::NapiValue, 0::Csize_t)::NapiValue
 end
 function napi_value(v::AbstractArray; copy_array=false, typedarray_type=nothing)
     isnothing(typedarray_type) || return _napi_value(v, typedarray_type; copy_array=copy_array)

@@ -54,6 +54,7 @@ using Dates: DateTime
         @test typeof(node"new ArrayBuffer(1)") ≡ Vector{UInt8}
         @test typeof(node"new SharedArrayBuffer(1)") ≡ JsObject # Vector{UInt8}
         @test typeof(node"new DataView(new ArrayBuffer(1))") ≡ Vector{UInt8}
+        @test instanceof(node_value(Vector{Float64}()), node"Float64Array")
         # `Promise`
         @test typeof(node"new Promise(()=>{})") ≡ JsPromise  # TODO: implement Promise
     end
@@ -95,6 +96,10 @@ using Dates: DateTime
             yield 2;
             yield 3;
         }"
+        js_sort! = node"(x) => x.sort()"
+        a1 = rand(10)
+        js_sort!(a1)
+        @test issorted(a1)
         # TODO: wrap generator.
         # @test collect(f3) .≈ [1, 2, 3]
     end
