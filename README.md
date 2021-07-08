@@ -6,13 +6,21 @@ WIP.
 
 ## Dependency
 
-`libjlnode_jll`.
+`libjlnode_jll.jl`.
 
 ## Usage
 
 ## Examples
 See [`test/runtests.jl`](./test/runtests.jl) for examples.
 
+## TODO
+
+- Package `libjlnode_jll.jl` by compiling [`jlnode`](https://github.com/sunoru/jlnode).
+- Add CI.
+- Implement interface for asynchronous functions as well as generators.
+- Make use of multiple threads/processes (worker threads in node).
+- Clean possibly messy code.
+- More utility functions (such as executing npm, running with multiple contexts).
 
 ## LICENSE
 
