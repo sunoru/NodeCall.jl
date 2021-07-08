@@ -15,7 +15,8 @@ See [`test/runtests.jl`](./test/runtests.jl) for examples.
 
 ## TODO
 
-- Package `libjlnode_jll.jl` by compiling [`jlnode`](https://github.com/sunoru/jlnode).
+- Avoid creating arraybuffer for same Julia array more than once.
+- Pack `libjlnode_jll.jl` by compiling [`jlnode`](https://github.com/sunoru/jlnode).
 - Add CI.
 - Implement interface for asynchronous functions as well as generators.
 - Make use of multiple threads/processes (worker threads in node).

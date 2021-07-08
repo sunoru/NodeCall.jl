@@ -6,7 +6,8 @@ export NapiPointer, NapiEnv, NapiValue,
     NapiRef, NapiHandleScope, NapiDeferred,
     NapiTypedArrayInfo,
     NapiArrayBufferInfo,
-    NapiExtendedErrorInfo
+    NapiExtendedErrorInfo,
+    NapiPropertyDescriptor
 # Enums
 export NapiValueType, NapiTypedArrayType, NapiStatus
 
@@ -29,6 +30,7 @@ Base.show(io::IO, x::AbstractNapiPointer) = print(io, string(typeof(x), ": ", co
 const NapiRef = NapiPointer
 const NapiHandleScope = NapiPointer
 const NapiDeferred = NapiPointer
+const NapiCallback = NapiPointer
 
 @enum NapiValueType begin
     napi_undefined
@@ -101,6 +103,35 @@ struct NapiExtendedErrorInfo
     engine_reserved::NapiPointer
     engine_error_code::UInt32
     error_code::NapiStatus
+end
+
+@enum NapiPropertyAttributes begin
+  napi_default = 0
+  napi_writable = 1 << 0
+  napi_enumerable = 1 << 1
+  napi_configurable = 1 << 2
+
+  napi_static = 1 << 10
+
+  # napi_default_method = napi_writable | napi_configurable
+  napi_default_method = (1 << 0) | (1 << 2)
+#   napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+  napi_default_jsproperty = (1 << 0) | (1 << 1) | (1 << 2)
+end
+
+Base.@kwdef struct NapiPropertyDescriptor
+  # One of utf8name or name should be NULL.
+  utf8name::Cstring = C_NULL
+  name::NapiValue = C_NULL
+
+  method::NapiCallback = C_NULL
+  getter::NapiCallback = C_NULL
+  setter::NapiCallback = C_NULL
+
+  value::NapiValue = C_NULL
+
+  attributes::NapiPropertyAttributes = napi_default_property
+  data::NapiPointer = C_NULL
 end
 
 end

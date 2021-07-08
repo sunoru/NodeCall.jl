@@ -75,11 +75,10 @@ function open_scope()
         scope
     end
 end
-function close_scope(scope::Union{Nothing, NapiHandleScope})
-    if !isnothing(scope)
-        @napi_call napi_close_handle_scope(scope::NapiHandleScope)
-        pop!(_SCOPE_STACK, scope)
-    end
+
+close_scope(scope::Union{Nothing, NapiHandleScope}) = if !isnothing(scope)
+    @napi_call napi_close_handle_scope(scope::NapiHandleScope)
+    pop!(_SCOPE_STACK, scope)
 end
 
 function open_scope(f)
@@ -96,13 +95,5 @@ macro with_scope(code)
     end))
 end
 
-_get_global() = @napi_call napi_get_global()::NapiValue
-get_global() = NodeObject(_get_global())
-const tempvar_name = "__jlnode_tmp"
-get_tempvar(tempname = nothing) = open_scope() do _
-    _global = _get_global()
-    temp = _global[tempvar_name]
-    isnothing(tempname) ? temp : temp[tempname]
-end
-
-
+string_pointer(ptr::Ptr) = string("0x", string(UInt64(ptr), base = 16))
+string_pointer(o) = string_pointer(pointer_from_objref(o))

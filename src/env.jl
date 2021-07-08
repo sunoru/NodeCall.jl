@@ -14,8 +14,7 @@ function initialize!(env, addon_path)
     ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
     @assert ret == 0
     env.env = _env[]
-    _js_map[] = node"Map"o
-    _js_set[] = node"Set"o
+    _initialize_types()
     run("""
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
