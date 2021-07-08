@@ -1,4 +1,5 @@
 using NodeCall, Test
+using Dates: DateTime
 
 @testset "NodeCall.jl" begin
 
@@ -14,7 +15,7 @@ using NodeCall, Test
         # `string`
         @test node"'a string'" ≡ "a string"
         # `bigint`
-        @test node"28227453635394322245338923n" ≡ 28227453635394322245338923
+        @test node"282278710948156123453635394322245338923n" == 282278710948156123453635394322245338923
         # `symbol`
         @test node"Symbol.for('sym')" ≡ :sym
 
@@ -26,10 +27,12 @@ using NodeCall, Test
         @test typeof(node"eval") ≡ JsFunction
 
         # `Date`:
-        @test typeof(node"new Date()") ≡ Date
+        @test typeof(node"new Date()") ≡ DateTime
         # `Array`: try to convert
         @test typeof(node"[]") ≡ Vector{Any}
         @test typeof(node"[1]") ≡ Vector{Float64}
+        @test typeof(node"[2, 't']") ≡ Vector{Any}
+        @test typeof(node"[3, 123n]") ≡ Vector{Real}
         # Typed arrays:
         @test typeof(node"new Int8Array(1)") ≡ Vector{Int8}
         @test typeof(node"new Uint8Array(1)") ≡ Vector{UInt8}
@@ -44,9 +47,9 @@ using NodeCall, Test
         @test typeof(node"new BigUint64Array(1)") ≡ Vector{UInt64}
         # `Map`, `WeekMap`, `Set`, `WeakSet`
         @test typeof(node"new Map()") ≡ Dict{Any, Any}
-        @test typeof(node"new WeakMap()") ≡ Dict{Any, Any}
+        @test typeof(node"new WeakMap()") ≡ JsObject
         @test typeof(node"new Set()") ≡ Set{Any}
-        @test typeof(node"new WeakSet()") ≡ Set{Any}
+        @test typeof(node"new WeakSet()") ≡ JsObject
         # `ArrayBuffer`, `SharedArrayBuffer`, `DataView`
         @test typeof(node"new ArrayBuffer(1)") ≡ Vector{UInt8}
         @test typeof(node"new SharedArrayBuffer(1)") ≡ Vector{UInt8}

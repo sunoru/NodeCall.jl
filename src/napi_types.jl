@@ -4,6 +4,8 @@ module NapiTypes
 # Types
 export NapiPointer, NapiEnv, NapiValue,
     NapiRef, NapiHandleScope,
+    NapiTypedArrayInfo,
+    NapiArrayBufferInfo,
     NapiExtendedErrorInfo
 # Enums
 export NapiValueType, NapiTypedArrayType, NapiStatus
@@ -13,12 +15,17 @@ primitive type NapiPointer <: AbstractNapiPointer 64 end
 primitive type NapiEnv <: AbstractNapiPointer 64 end
 primitive type NapiValue <: AbstractNapiPointer 64 end
 Base.convert(::Type{T}, x::UInt64) where T <: AbstractNapiPointer = reinterpret(T, x)
-Base.convert(::Type{T}, x::Ptr) where T <: AbstractNapiPointer = reinterpret(T, UInt64(x))
 Base.convert(::Type{T}, x::AbstractNapiPointer) where T <: AbstractNapiPointer = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiPointer) where T <: Ptr = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiEnv) where T <: Ptr = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiValue) where T <: Ptr = reinterpret(T, x)
+Base.convert(T::Type{NapiPointer}, x::Ptr) = reinterpret(T, UInt64(x))
+Base.convert(T::Type{NapiEnv}, x::Ptr) = reinterpret(T, UInt64(x))
+Base.convert(T::Type{NapiValue}, x::Ptr) = reinterpret(T, UInt64(x))
 Base.convert(::Type{NapiPointer}, x::NapiPointer) = x
 Base.convert(::Type{NapiEnv}, x::NapiEnv) = x
 Base.convert(::Type{NapiValue}, x::NapiValue) = x
-Base.show(io::IO, x::AbstractNapiPointer) = print(io, reinterpret(UInt64, x))
+Base.show(io::IO, x::AbstractNapiPointer) = print(io, string(typeof(x), ": ", convert(Ptr{Nothing}, x)))
 const NapiRef = NapiPointer
 const NapiHandleScope = NapiPointer
 
@@ -74,6 +81,19 @@ end
     napi_would_deadlock
 end
 Base.getindex(status::NapiStatus) = status
+
+struct NapiTypedArrayInfo
+    type::NapiTypedArrayType
+    length::Csize_t
+    data::Ptr{Cvoid}
+    arraybuffer::NapiValue
+    byte_offset::Csize_t
+end
+
+struct NapiArrayBufferInfo
+    data::Ptr{UInt8}
+    length::Csize_t
+end
 
 struct NapiExtendedErrorInfo
     error_message::Cstring

@@ -5,18 +5,20 @@ using .NapiTypes
 
 include("utils.jl")
 
-export EnvironmentConfig
-include("env.jl")
+export run, @node_str, require
+include("eval.jl")
 
-export NodeValueTemp, NodeObject, JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol, JsObject, JsFunction
+export NapiValue, NodeValue, JsValue,
+       NodeValueTemp, NodeObject,
+       JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
+       JsObject, JsFunction
+export set!, instanceof
 include("types.jl")
 
 export value, node_value
 include("conversions.jl")
 
-export run, @node_str, require
-include("eval.jl")
-
-include("defaults.jl")
+export global_env
+include("env.jl")
 
 end # module

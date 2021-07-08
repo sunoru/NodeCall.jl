@@ -4,51 +4,51 @@ const _GLOBAL_RNG = Xoshiro256StarStar()
 global_rng() = _GLOBAL_RNG
 
 
-macro libcall(env, sym)
+macro napi_call(env, sym)
     has_return = sym.head == :(::)
     func, result = if has_return
         sym.args[1], gensym()
     else
         sym, :status
     end
-    check_error_block = if env == :nothing
-        :(@assert status == NapiTypes.napi_ok)
-    else
-        insert!(func.args, 2, :($env::NapiEnv))
-        :(if status != NapiTypes.napi_ok
-            throw_error($env)
-        end)
-    end
-    define_result = if has_return
+    define_vars = if has_return
         return_type = sym.args[2]
         push!(func.args, :($result::Ptr{$return_type}))
-        :($result = Ref{$return_type}())
+        quote
+          $result = Ref{$return_type}()
+        end
     else
-        :()
+        quote end
     end
+    insert!(func.args, 2, :($env::NapiEnv))
     fname = func.args[1]
     func.args[1] = :(:libjlnode.x)
     func.args[1].args[2] = QuoteNode(fname)
     esc(quote
-        $define_result
+        $define_vars
         status = @ccall $func::NapiStatus
-        $check_error_block
+        if status != NapiTypes.napi_ok
+            @debug status
+            throw_error($env)
+        end
         $result[]
     end)
 end
-macro libcall(sym)
-    :(@libcall nothing $sym)
+macro napi_call(sym)
+    esc(quote
+        env = global_env()
+        @napi_call env $sym
+    end)
 end
 
-function throw_error(env::NapiEnv)
-    info = @libcall env napi_get_last_error_info()::Ptr{NapiExtendedErrorInfo}
-    is_exception_pending = @libcall env napi_is_exception_pending()::Bool
+function throw_error(env::NapiEnv = global_env())
+    info = @napi_call env napi_get_last_error_info()::Ptr{NapiExtendedErrorInfo}
+    is_exception_pending = @napi_call env napi_is_exception_pending()::Bool
     err = if is_exception_pending
-        @libcall env napi_get_and_clear_last_exception()::NapiValue
+        @napi_call env napi_get_and_clear_last_exception()::NapiValue
     else
         error_info = unsafe_load(info)
         message = NapiValue(
-            env,
             error_info.error_message == C_NULL ? "Error in native callback" : error_info.error_message
         )
         if error_info.error_code ∈ (
@@ -58,50 +58,51 @@ function throw_error(env::NapiEnv)
             NapiTypes.napi_boolean_expected,
             NapiTypes.napi_number_expected
         )
-            @libcall env napi_create_type_error(C_NULL::NapiValue, message::NapiValue)::NapiValue
+            @napi_call env napi_create_type_error(C_NULL::NapiValue, message::NapiValue)::NapiValue
         else
-            @libcall env napi_create_error(C_NULL::NapiValue, message::NapiValue)::NapiValue
+            @napi_call env napi_create_error(C_NULL::NapiValue, message::NapiValue)::NapiValue
         end
     end
-    throw(NodeObject(env, err))
+    throw(NodeError(err))
 end
 
 const _SCOPE_STACK = Set{NapiHandleScope}()
 
-function open_scope(env::NapiEnv)
+function open_scope()
     if length(_SCOPE_STACK) < 2
-        scope = @libcall env napi_open_handle_scope()::NapiHandleScope
+        scope = @napi_call napi_open_handle_scope()::NapiHandleScope
         push!(_SCOPE_STACK, scope)
         scope
     end
 end
-function close_scope(env::NapiEnv, scope::Union{Nothing, NapiHandleScope})
+function close_scope(scope::Union{Nothing, NapiHandleScope})
     if !isnothing(scope)
-        @libcall env napi_close_handle_scope(scope::NapiHandleScope)
+        @napi_call napi_close_handle_scope(scope::NapiHandleScope)
         pop!(_SCOPE_STACK, scope)
     end
 end
 
-function open_scope(f, env::NapiEnv)
-    scope = open_scope(env)
-    ret = f(scope)
-    close_scope(env, scope)
-    ret
+function open_scope(f)
+    scope = open_scope()
+    try
+        return f(scope)
+    finally
+        close_scope(scope)
+    end
 end
-macro with_scope(env, code)
-    :(open_scope($env) do _
+macro with_scope(code)
+    esc(:(open_scope() do _
         $code
-    end)
+    end))
 end
 
-_get_global(env::NapiEnv) = @libcall env napi_get_global()::NapiValue
-get_global(env::NapiEnv) = ObjectReference(env, _get_global(env))
+_get_global() = @napi_call napi_get_global()::NapiValue
+get_global() = NodeObject(_get_global())
 const tempvar_name = "__jlnode_tmp"
-get_tempvar(env::NapiEnv, tempname = nothing) = open_scope(env) do _
-    _global = _get_global(env)
-    temp = JsObjectValue(NodeObject(
-        env,
-        @libcall env napi_get_property(_global::NapiValue, NapiValue(env, tempvar_name)::NapiValue)::NapiValue
-    ))
+get_tempvar(tempname = nothing) = open_scope() do _
+    _global = _get_global()
+    temp = _global[tempvar_name]
     isnothing(tempname) ? temp : temp[tempname]
 end
+
+

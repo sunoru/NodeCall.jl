@@ -14,9 +14,14 @@ function initialize!(env, addon_path)
     ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
     @assert ret == 0
     env.env = _env[]
-    run(_env[], "globalThis.$(tempvar_name) = {}")
+    _js_map[] = node"Map"o
+    _js_set[] = node"Set"o
+    run("""
+        globalThis.$(tempvar_name) = {}
+        globalThis.assert = require('assert').strict
+    """)
     Random.seed!(_GLOBAL_RNG)
-    @debug "NodeJS initialized..."
+    @debug "NodeJS initialized."
     env
 end
 
@@ -24,7 +29,7 @@ function dispose(env)
     @debug "Disposing NodeJS..."
     ret = @ccall :libjlnode.dispose()::Cint
     @assert ret == 0
-    @debug "NodeJS disposed..."
+    @debug "NodeJS disposed."
 end
 
 function __init__()

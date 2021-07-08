@@ -1,29 +1,29 @@
 abstract type NodeValue end
-napi_env(v::NodeValue) = v.env
-NodeValue(env, value) = node_value(env, value)
-# Base.show(io::IO, v::NodeValue) = print(io, value(napi_env(v), String, v))
 
 mutable struct NodeValueTemp <: NodeValue
-    env::NapiEnv
     tempname::String
 end
 
 mutable struct NodeObject <: NodeValue
-    env::NapiEnv
     ref::NapiRef
-    function NodeObject(env, napi_ref)
-        ref = new(env, napi_ref)
+    function NodeObject(napi_ref)
+        ref = new(napi_ref)
         finalizer(ref) do r
-            @libcall r.env napi_delete_reference(r.ref::NapiRef)
+            @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
         end
         ref
     end
 end
 
-NodeObject(env, value::NapiValue) = NodeObject(
-    env,
-    @libcall env napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
+NodeObject(value::NapiValue) = NodeObject(
+    @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
 )
+
+struct NodeError <: NodeValue
+    o::NodeObject
+end
+NodeError(value::NapiValue) = NodeError(NodeObject(value))
+Base.show(io::IO, v::NodeError) = print(io, v.message)
 
 const JsUndefined = Nothing
 const JsNull = Nothing
@@ -36,31 +36,99 @@ const JsSymbol = Symbol
 
 abstract type JsValue end
 
-abstract type JsObject <: JsValue end
+abstract type JsObjectType <: JsValue end
 
-struct JsObjectValue <: JsObject
+struct JsObject <: JsObjectType
     ref::NodeObject
 end
 
-struct JsFunction <: JsObject
+struct JsFunction <: JsObjectType
     ref::NodeObject
-end
-napi_env(v::JsObject) = napi_env(v.ref)
-
-Base.getindex(o::Union{NodeObject, JsObject}, key; convert_result=true) = let env = napi_env(o)
-    value(
-        env,
-        @libcall env napi_get_property(NapiValue(o)::NapiValue, NapiValue(env, key)::NapiValue)::NapiValue
-    )
-end
-Base.setindex!(o::Union{NodeObject, JsObject}, key, value) = let env = napi_env(o)
-    @libcall env napi_set_property(NapiValue(o)::NapiValue, NapiValue(env, key)::NapiValue, NapiValue(env, value)::NapiValue)::Bool
 end
 
 struct JsExternal <: JsValue
     ptr::NapiPointer
 end
 
-JsValue(env, value) = value(env, value)
-
 const ValueTypes = Union{NapiValue, NodeValue, JsValue}
+
+Base.get(o::ValueTypes, key; convert_result=true) = open_scope() do _
+    v = @napi_call napi_get_property(o::NapiValue, key::NapiValue)::NapiValue
+    convert_result ? value(v) : node_value(v)
+end
+set!(o::ValueTypes, key, value) = open_scope() do _
+    @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)::Bool
+end
+Base.haskey(o::ValueTypes, key) = open_scope() do _
+    @napi_call napi_has_property(o::NapiValue, key::NapiValue)::Bool
+end
+Base.delete!(o::ValueTypes, key) = open_scope() do _
+    @napi_call napi_delete_property(o::NapiValue, key::NapiValue)::Bool
+end
+
+Base.get(o::ValueTypes, key::AbstractString; convert_result=true) = open_scope() do _
+    v = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
+    convert_result ? value(v) : node_value(v)
+end
+set!(o::ValueTypes, key::AbstractString, value) = open_scope() do _
+    @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)::Bool
+end
+Base.haskey(o::ValueTypes, key::AbstractString) = open_scope() do _
+    @napi_call napi_has_property(o::NapiValue, key::Cstring)::Bool
+end
+Base.keys(o::ValueTypes) = open_scope() do _
+    value(Array, @napi_call napi_get_property_names(o::NapiValue)::NapiValue)
+end
+
+Base.get(o::ValueTypes, key::Integer; convert_result=true) = open_scope() do _
+    v = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
+    convert_result ? value(v) : node_value(v)
+end
+set!(o::ValueTypes, key::Integer, value) = open_scope() do _
+    @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)::Bool
+end
+Base.haskey(o::ValueTypes, key::Integer) = open_scope() do _
+    @napi_call napi_has_element(o::NapiValue, key::UInt32)::Bool
+end
+Base.delete!(o::ValueTypes, key::Integer) = open_scope() do _
+    @napi_call napi_delete_element(o::NapiValue, key::UInt32)::Bool
+end
+
+Base.getproperty(o::ValueTypes, key::Symbol) = get(o, string(key))
+Base.setproperty!(o::ValueTypes, key::Symbol, value) = set!(o, string(key), value)
+Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
+Base.propertynames(o::ValueTypes) = keys(o, Symbol.(keys(o)))
+Base.getindex(o::ValueTypes, key) = get(o, key)
+Base.setindex!(o::ValueTypes, key, value) = set!(o, key, value)
+
+Base.show(io::IO, v::NodeValueTemp) = print(io, string("NodeValueTemp: ", getfield(v, :tempname)))
+Base.show(io::IO, v::NodeObject) = print(io, string("NodeObject: ", getfield(v, :ref)))
+Base.show(io::IO, v::JsObjectType) = print(io, string(typeof(v), ": ", UInt64(pointer_from_objref(getfield(v, :ref)))))
+Base.show(io::IO, v::JsExternal) = print(io, string(typeof(v), ": ", getfield(v, :ptr)))
+
+Base.length(v::ValueTypes) = Int(open_scope() do _
+    nv = NapiValue(v)
+    if is_typedarray(nv)
+        typedarray_info(nv).length
+    elseif is_arraybuffer(nv)
+        arraybuffer_info(nv).length
+    else
+        @napi_call napi_get_array_length(nv::NapiValue)::UInt32
+    end
+end)
+
+get_type(v::ValueTypes) = @napi_call napi_typeof(v::NapiValue)::NapiValueType
+instanceof(a::ValueTypes, b::ValueTypes) = @with_scope try
+    @napi_call napi_instanceof(a::NapiValue, b::NapiValue)::Bool
+catch _
+    false
+end
+
+# Call
+(func::ValueTypes)(args...; recv=nothing, convert_result=true) = open_scope() do _
+    recv = isnothing(recv) ? _get_global() : recv
+    argc = length(args)
+    argv = argc == 0 ? C_NULL : NapiValue.(collect(args))
+    result = @napi_call napi_call_function(recv::NapiValue, func::NapiValue, argc::Csize_t, argv::Ptr{NapiValue})::NapiValue
+    convert_result ? value(result) : result
+end
