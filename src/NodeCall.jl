@@ -11,7 +11,7 @@ include("eval.jl")
 export NapiValue, NodeValue, JsValue,
        NodeValueTemp, NodeObject,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
-       JsObject, JsFunction
+       JsObject, JsFunction, JsPromise
 export set!, instanceof
 include("types.jl")
 

@@ -1,3 +1,5 @@
+import Base: ==
+
 abstract type NodeValue end
 
 mutable struct NodeValueTemp <: NodeValue
@@ -44,6 +46,11 @@ end
 
 struct JsFunction <: JsObjectType
     ref::NodeObject
+end
+
+struct JsPromise <: JsObjectType
+    ref::NodeObject
+    deferred::NapiDeferred
 end
 
 struct JsExternal <: JsValue
@@ -97,7 +104,7 @@ end
 Base.getproperty(o::ValueTypes, key::Symbol) = get(o, string(key))
 Base.setproperty!(o::ValueTypes, key::Symbol, value) = set!(o, string(key), value)
 Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
-Base.propertynames(o::ValueTypes) = keys(o, Symbol.(keys(o)))
+Base.propertynames(o::ValueTypes) = Symbol.(keys(o))
 Base.getindex(o::ValueTypes, key) = get(o, key)
 Base.setindex!(o::ValueTypes, key, value) = set!(o, key, value)
 
@@ -131,4 +138,10 @@ end
     argv = argc == 0 ? C_NULL : NapiValue.(collect(args))
     result = @napi_call napi_call_function(recv::NapiValue, func::NapiValue, argc::Csize_t, argv::Ptr{NapiValue})::NapiValue
     convert_result ? value(result) : result
+end
+
+==(a::ValueTypes, b::ValueTypes) = @with_scope try
+    @napi_call napi_strict_equals(a::NapiValue, b::NapiValue)::Bool
+catch _
+    false
 end

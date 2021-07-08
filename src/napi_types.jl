@@ -3,7 +3,7 @@ module NapiTypes
 
 # Types
 export NapiPointer, NapiEnv, NapiValue,
-    NapiRef, NapiHandleScope,
+    NapiRef, NapiHandleScope, NapiDeferred,
     NapiTypedArrayInfo,
     NapiArrayBufferInfo,
     NapiExtendedErrorInfo
@@ -28,6 +28,7 @@ Base.convert(::Type{NapiValue}, x::NapiValue) = x
 Base.show(io::IO, x::AbstractNapiPointer) = print(io, string(typeof(x), ": ", convert(Ptr{Nothing}, x)))
 const NapiRef = NapiPointer
 const NapiHandleScope = NapiPointer
+const NapiDeferred = NapiPointer
 
 @enum NapiValueType begin
     napi_undefined

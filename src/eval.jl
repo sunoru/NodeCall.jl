@@ -29,4 +29,4 @@ macro node_str(code, options...)
     end
 end
 
-require(id::AbstractString) = run("globalThis.require($(id))")
+require(id::AbstractString) = run("globalThis.require('$(id)')")
