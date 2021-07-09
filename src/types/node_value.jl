@@ -2,34 +2,39 @@ import UUIDs: uuid4
 
 const tempvar_name = "__jlnode_tmp"
 
-_get_tempvar(tempname = nothing) = open_scope() do _
-    temp = get_global()[tempvar_name]
+get_tempvar(tempname = nothing) = open_scope() do _
+    temp = get(get_global(), tempvar_name; convert_result=false)
     isnothing(tempname) ? temp : temp[tempname]
 end
 
 mutable struct NodeValueTemp <: NodeValue
     tempname::String
-    function NodeValueTemp(tempname)
+    function NodeValueTemp(tempname::AbstractString)
         nv = new(tempname)
         finalizer(nv) do v
-            @with_scope delete!(_get_tempvar(), v.tempname)
+            if initialized()
+                @with_scope delete!(get_tempvar(), getfield(v, :tempname))
+            end
         end
     end
 end
 
-NodeValueTemp(value::NapiValue, tempname=nothing) = open_scope() do _
+NodeValueTemp(v::NapiValue, tempname=nothing) = open_scope() do _
     tempname = isnothing(tempname) ? string(uuid4(global_rng())) : tempname
-    tempvar = _get_tempvar()
-    tempvar[tempname] = value
+    tempvar = get_tempvar()
+    tempvar[tempname] = v
     NodeValueTemp(tempname)
 end
 
+
 mutable struct NodeObject <: NodeValue
     ref::NapiRef
-    function NodeObject(napi_ref)
+    function NodeObject(napi_ref::NapiRef)
         ref = new(napi_ref)
         finalizer(ref) do r
-            @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
+            if initialized()
+                @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
+            end
         end
         ref
     end
@@ -46,6 +51,8 @@ NodeError(value::NapiValue) = NodeError(NodeObject(value))
 
 NodeValue(v) = node_value(v)
 Base.convert(::Type{NodeValue}, v::T) where T = NodeValue(v)
+Base.convert(::Type{NodeValue}, v::T) where T <: NodeValue = v
+Base.convert(::Type{Union{Nothing, NodeValue}}, v::T) where T <: NodeValue = v
 function node_value(
     napi_value::NapiValue;
     tempname = nothing
@@ -63,7 +70,10 @@ Base.show(io::IO, v::NodeValueTemp) = print(io, string("NodeValueTemp: ", getfie
 Base.show(io::IO, v::NodeObject) = print(io, string("NodeObject: ", getfield(v, :ref)))
 Base.show(io::IO, v::NodeError) = print(io, v.message)
 
-napi_value(node_value::NodeValueTemp) = get_tempvar(getfield(node_value, :tempname))
+napi_value(temp::NodeValueTemp) = @napi_call napi_get_named_property(
+    get_tempvar()::NapiValue,
+    getfield(temp, :tempname)::Cstring
+)::NapiValue
 napi_value(node_object::NodeObject) = @napi_call napi_get_reference_value(
     getfield(node_object, :ref)::NapiRef
 )::NapiValue

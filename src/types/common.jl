@@ -22,14 +22,14 @@ end
 @wrap_is_type dataview
 @wrap_is_type promise
 
-const _js_map = Ref{NodeObject}()
-is_map(v::NapiValue) = instanceof(v, _js_map[])
-const _js_set = Ref{NodeObject}()
-is_set(v::NapiValue) = instanceof(v, _js_set[])
+const _JS_MAP = Ref{NodeObject}()
+is_map(v::NapiValue) = instanceof(v, _JS_MAP[])
+const _JS_SET = Ref{NodeObject}()
+is_set(v::NapiValue) = instanceof(v, _JS_SET[])
 
 function _initialize_types()
-    _js_map[] = node"Map"o
-    _js_set[] = node"Set"o
+    _JS_MAP[] = node"Map"o
+    _JS_SET[] = node"Set"o
 end
 
 macro wrap_coerce_convert(name)
@@ -96,3 +96,17 @@ Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
 Base.propertynames(o::ValueTypes) = Symbol.(keys(o))
 Base.getindex(o::ValueTypes, key) = get(o, key)
 Base.setindex!(o::ValueTypes, key, value) = set!(o, key, value)
+
+function get_callback_info(info::NapiPointer, argc = 6)
+    argv = Vector{NapiValue}(undef, argc)
+    argc = Ref(argc)
+    this = Ref{NapiValue}
+    data = @napi_call napi_get_cb_info(
+        info::NapiPointer,
+        argc::Ptr{Csize_t}, argv::Ptr{NapiValue},
+        this::Ptr{NapiValue}
+    )::NapiPointer
+    NapiCallbackInfo(argc[], argv, this[], data)
+end
+
+create_callback(f) = @cfunction($f, NapiValue, (NapiEnv, NapiCallbackInfo))

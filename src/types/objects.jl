@@ -4,7 +4,9 @@ struct JsObject <: JsObjectType
     ref::NodeObject
 end
 
-function create_object(properties::Union{Nothing, AbstractArray{NapiPropertyDescriptor}} = nothing)
+function create_object(properties::Union{
+    Nothing, AbstractArray{NapiPropertyDescriptor}, AbstractArray{NapiPropertyDescriptor}
+} = nothing)
     nv = @napi_call napi_create_object()::NapiValue
     if !isnothing(properties)
         @napi_call napi_define_properties(
@@ -15,26 +17,68 @@ function create_object(properties::Union{Nothing, AbstractArray{NapiPropertyDesc
     end
     nv
 end
-get_descriptors(x) = [
+
+function dict_getter(_env, _info)
+    info = get_callback_info(_info, 1)
+    x = get(JuliaObjectCache, info.data, nothing)
+    isnothing(x) && return get_undefined()
+    x[1][info.argv[1]]
+end
+function dict_setter(_env, _info)
+    info = get_callback_info(_info, 2)
+    x = get(JuliaObjectCache, info.data, nothing)
+    isnothing(x) && return get_undefined()
+    x[1][info.argv[1]] = value(info.argv[2])
+    x[1][info.argv[1]]
+end
+function mutable_getter(_env, _info)
+    info = get_callback_info(_info, 1)
+    x = get(JuliaObjectCache, info.data, nothing)
+    isnothing(x) && return get_undefined()
+    x[1][info.argv[1]]
+end
+function mutable_setter(_env, _info)
+    info = get_callback_info(_info, 2)
+    x = get(JuliaObjectCache, info.data, nothing)
+    isnothing(x) && return get_undefined()
+    x[1][info.argv[1]] = value(info.argv[2])
+    x[1][info.argv[1]]
+end
+get_dict_descriptors(x) = [begin
     NapiPropertyDescriptor(
-        utf8name=string(k),
-        value=NapiValue(v)
-    ) for (k, v) in x
-]
-get_property_descriptors(x) = get_descriptors(
-    (k, getproperty(x, k)) for k in propertynames(x)
-)
-get_field_descriptors(x::T) where T = get_descriptors(
-    (k, getfield(x, k)) for k in fieldnames(T)
-)
+        name = string(k),
+        getter = create_callback(dict_getter),
+        setter = create_callback(dict_setter),
+        data = pointer_from_objref(x),
+        attributes = NapiTypes.napi_writable
+    )
+end for k in keys(x)]
+get_mutable_descriptors(x) = [begin
+    NapiPropertyDescriptor(
+        name = string(k),
+        getter = create_callback(mutable_getter),
+        setter = create_callback(mutable_setter),
+        data = pointer_from_objref(x),
+        attributes = NapiTypes.napi_writable
+    )
+end for k in propertynames(x)]
+get_immutable_descriptors(x) = [NapiPropertyDescriptor(
+    name = string(k),
+    value = NapiValue(getfield(x, k))
+) for k in fieldnames(x)]
 
 const JuliaTypeCache = Dict{Ptr{Type}, Type}()
-const JuliaObjectCache = Dict{NapiPointer, Tuple{Any, NodeObject}}()
-add_jltype(::Type{T}) where T = let p = Ptr{Type}(pointer_from_objref(T))
+const JuliaObjectCache = Dict{NapiPointer, Tuple{Any, NodeObject, Vector{NapiPropertyDescriptor}}}()
+function add_jltype!(properties, ::Type{T}) where T
+    p = Ptr{Type}(pointer_from_objref(T))
     if !haskey(JuliaTypeCache, p)
          JuliaTypeCache[p] = T
     end
-    NapiValue(UInt64(p))
+    push!(properties, NapiPropertyDescriptor(
+        name = _JLTYPE_PROPERTY,
+        attributes = NapiTypes.napi_default,
+        value = NodeExternal(p)
+    ))
 end
 
 const _JLTYPE_PROPERTY = "__jl_type"
@@ -42,33 +86,30 @@ const _JLPTR_PROPERTY = "__jl_ptr"
 napi_value(js_object::JsObjectType) = convert(NapiValue, getfield(js_object, :ref))
 napi_value(v::DateTime) = @napi_call napi_create_date(datetime2unix(v)::Cdouble)::NapiValue
 function napi_value(v::T; isdict=false) where T
-    mut = mutable(v)
+    mut = ismutable(v)
+    ptr = nothing
     if mut
         ptr = NapiPointer(pointer_from_objref(v))
         haskey(JuliaObjectCache, ptr) && return NapiValue(JuliaObjectCache[ptr][2])
     end
     properties = if isdict
-        get_descriptors(v)
+        get_dict_descriptors(v)
     elseif mut
-        get_properties_descriptors(v)
+        get_mutable_descriptors(v)
     else
-        get_field_descriptors(v)
+        get_immutable_descriptors(v)
     end
-    push!(properties, NapiPropertyDescriptor(
-        utf8name = _JLTYPE_PROPERTY,
-        attributes = NapiTypes.napi_default,
-        value = add_jltype(T)
-    ))
+    add_jltype!(properties, T)
     if mut
         push!(properties, NapiPropertyDescriptor(
-            utf8name = _JLPTR_PROPERTY,
+            name = _JLPTR_PROPERTY,
             attributes = NapiTypes.napi_default,
-            value = NapiValue(UInt64(ptr))
+            value = NodeExternal(ptr, () -> delete!(JuliaObjectCache, ptr))
         ))
     end
     nv = create_object(properties)
     if mut
-        JuliaObjectCache[ptr] = (v, NodeObject(nv))
+        JuliaObjectCache[ptr] = (v, node_value(nv), properties)
     end
     nv
 end
@@ -80,18 +121,18 @@ value(::Type{DateTime}, v::NapiValue) = open_scope() do _
     unix2datetime(val / 1000)
 end
 
-function _get_cached(v::NapiValue)
-    jltype = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
+_get_cached(v::NapiValue) = open_scope() do _
+    jltype = @napi_call napi_get_property(v::NapiValue, _JLTYPE_PROPERTY::NapiValue)::NapiValue
     get_type(jltype) == NapiTypes.napi_undefined && return nothing
-    jltype_ptr = Ptr{Type}(value(UInt64, jltype))
+    jltype_ptr = Ptr{Type}(getfield(value(NodeExternal{T}, jltype), :ptr))
     T = get(JuliaTypeCache, jltype_ptr, nothing)
     isnothing(T) && return nothing
-    if T.mutable
-        jlobject = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
+    if getfield(T, :mutable)
+        jlobject = @napi_call napi_get_property(v::NapiValue, _JLPTR_PROPERTY::NapiValue)::NapiValue
         get_type(jlobject) == NapiTypes.napi_undefined && return nothing
-        jlobject_ptr = NapiPointer(value(UInt64, jlobject))
+        jlobject_ptr = Ptr{T}(getfield(value(NodeExternal{T}, jltype), :ptr))
         if haskey(JuliaObjectCache, jlobject_ptr)
-            JuliaObjectCache[ptr][1]::T
+            unsafe_load(jlobject_ptr)
         else
             nothing
         end

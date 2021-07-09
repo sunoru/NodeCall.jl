@@ -4,9 +4,12 @@ module NapiTypes
 # Types
 export NapiPointer, NapiEnv, NapiValue,
     NapiRef, NapiHandleScope, NapiDeferred,
+    NapiFinalize, NapiCallback,
+    NapiCallbackInfo,
     NapiTypedArrayInfo,
     NapiArrayBufferInfo,
     NapiExtendedErrorInfo,
+    NapiPropertyAttributes,
     NapiPropertyDescriptor
 # Enums
 export NapiValueType, NapiTypedArrayType, NapiStatus
@@ -20,6 +23,7 @@ Base.convert(::Type{T}, x::AbstractNapiPointer) where T <: AbstractNapiPointer =
 Base.convert(::Type{T}, x::NapiPointer) where T <: Ptr = reinterpret(T, x)
 Base.convert(::Type{T}, x::NapiEnv) where T <: Ptr = reinterpret(T, x)
 Base.convert(::Type{T}, x::NapiValue) where T <: Ptr = reinterpret(T, x)
+Base.Ptr{T}(x::NapiPointer) where T = convert(Ptr{T}, x)
 Base.convert(T::Type{NapiPointer}, x::Ptr) = reinterpret(T, UInt64(x))
 Base.convert(T::Type{NapiEnv}, x::Ptr) = reinterpret(T, UInt64(x))
 Base.convert(T::Type{NapiValue}, x::Ptr) = reinterpret(T, UInt64(x))
@@ -27,10 +31,12 @@ Base.convert(::Type{NapiPointer}, x::NapiPointer) = x
 Base.convert(::Type{NapiEnv}, x::NapiEnv) = x
 Base.convert(::Type{NapiValue}, x::NapiValue) = x
 Base.show(io::IO, x::AbstractNapiPointer) = print(io, string(typeof(x), ": ", convert(Ptr{Nothing}, x)))
+NapiPointer(x::Ptr) = convert(NapiPointer, x)
 const NapiRef = NapiPointer
 const NapiHandleScope = NapiPointer
 const NapiDeferred = NapiPointer
-const NapiCallback = NapiPointer
+const NapiFinalize = Union{Base.CFunction, Ptr{Cvoid}}
+const NapiCallback = Union{Base.CFunction, Ptr{Cvoid}}
 
 @enum NapiValueType begin
     napi_undefined
@@ -106,32 +112,39 @@ struct NapiExtendedErrorInfo
 end
 
 @enum NapiPropertyAttributes begin
-  napi_default = 0
-  napi_writable = 1 << 0
-  napi_enumerable = 1 << 1
-  napi_configurable = 1 << 2
+    napi_default = 0
+    napi_writable = 1 << 0
+    napi_enumerable = 1 << 1
+    napi_configurable = 1 << 2
 
-  napi_static = 1 << 10
+    napi_static = 1 << 10
 
-  # napi_default_method = napi_writable | napi_configurable
-  napi_default_method = (1 << 0) | (1 << 2)
-#   napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
-  napi_default_jsproperty = (1 << 0) | (1 << 1) | (1 << 2)
+    # napi_default_method = napi_writable | napi_configurable
+    napi_default_method = (1 << 0) | (1 << 2)
+  #   napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+    napi_default_jsproperty = (1 << 0) | (1 << 1) | (1 << 2)
 end
 
 Base.@kwdef struct NapiPropertyDescriptor
-  # One of utf8name or name should be NULL.
-  utf8name::Cstring = C_NULL
-  name::NapiValue = C_NULL
+    # One of utf8name or name should be NULL.
+    utf8name::Cstring = C_NULL
+    name::NapiValue = C_NULL
 
-  method::NapiCallback = C_NULL
-  getter::NapiCallback = C_NULL
-  setter::NapiCallback = C_NULL
+    method::NapiCallback = C_NULL
+    getter::NapiCallback = C_NULL
+    setter::NapiCallback = C_NULL
 
-  value::NapiValue = C_NULL
+    value::NapiValue = C_NULL
 
-  attributes::NapiPropertyAttributes = napi_default_property
-  data::NapiPointer = C_NULL
+    attributes::NapiPropertyAttributes = napi_default_jsproperty
+    data::NapiPointer = C_NULL
+end
+
+struct NapiCallbackInfo
+    argc::Csize_t
+    argv::Vector{NapiValue}
+    this::NapiValue
+    data::NapiPointer
 end
 
 end

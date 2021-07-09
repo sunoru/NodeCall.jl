@@ -96,12 +96,29 @@ using Dates: DateTime
             yield 2;
             yield 3;
         }"
+        # TODO: wrap generator.
+        # @test collect(f3) .≈ [1, 2, 3]
         js_sort! = node"(x) => x.sort()"
         a1 = rand(10)
         js_sort!(a1)
         @test issorted(a1)
-        # TODO: wrap generator.
-        # @test collect(f3) .≈ [1, 2, 3]
+        dict = Dict(1=>2, 3=>4, "x"=>5)
+        node"""(d) => {
+            d[1] = 5
+            d[3] = 6
+            d.x = 7
+        }"""(dict)
+        @test dict == Dict(1=>5, 3=>6, "x"=>7)
+        struct Foo
+            x::Int
+        end
+        @test node"(foo) => (foo.x = 3; foo)"(Foo(5)) == Foo(3)
+        mutable struct FooM
+            x::String
+        end
+        foo_m = FooM("before")
+        node"(foo, s) => (foo.x = s; foo)"(foo_m, "after")
+        @test foo_m.x = "after"
     end
 
     @testset "import" begin

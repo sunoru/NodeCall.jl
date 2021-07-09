@@ -7,6 +7,8 @@ end
 
 const _GLOBAL_ENV = EnvironmentConfig(C_NULL)
 global_env() = _GLOBAL_ENV.env
+const _INITIALIZED = Ref(false)
+initialized() = _INITIALIZED[]
 
 function initialize!(env, addon_path)
     @debug "Initializing NodeJS..."
@@ -14,12 +16,13 @@ function initialize!(env, addon_path)
     ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
     @assert ret == 0
     env.env = _env[]
-    _initialize_types()
     run("""
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
     """)
+    _initialize_types()
     Random.seed!(_GLOBAL_RNG)
+    _INITIALIZED[] = true
     @debug "NodeJS initialized."
     env
 end
@@ -28,6 +31,7 @@ function dispose(env)
     @debug "Disposing NodeJS..."
     ret = @ccall :libjlnode.dispose()::Cint
     @assert ret == 0
+    _INITIALIZED[] = false
     @debug "NodeJS disposed."
 end
 

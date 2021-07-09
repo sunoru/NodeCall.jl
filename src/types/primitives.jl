@@ -32,6 +32,7 @@ napi_value(::Nothing) = get_undefined()  # TODO: undefined or null?
 napi_value(v::Bool) = @napi_call napi_get_boolean(v::Bool)::NapiValue
 napi_value(v::Number) = napi_value(Float64(v))
 napi_value(s::AbstractString) = @napi_call napi_create_string_utf8(s::Cstring, length(s)::Csize_t)::NapiValue
+napi_value(s::Char) = napi_value(string(s))
 napi_value(s::Symbol) = @napi_call napi_create_symbol(napi_value(string(s))::NapiValue)::NapiValue
 napi_value(s::Cstring) = napi_value(unsafe_string(s))
 function napi_value(v::BigInt)

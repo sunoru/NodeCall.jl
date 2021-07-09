@@ -9,10 +9,10 @@ export run, @node_str, require
 include("eval.jl")
 
 export NapiValue, NodeValue, JsValue,
-       NodeValueTemp, NodeObject,
+       NodeValueTemp, NodeObject, NodeExternal,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
        JsObject, JsFunction, JsPromise
-export value, node_value
+export napi_value, node_value, value
 export set!, instanceof
 include("types/bases.jl")
 include("types/node_value.jl")

@@ -44,7 +44,7 @@ function value(napi_value::NapiValue)
     elseif t == NapiTypes.napi_function
         value(JsFunction, napi_value)
     elseif t == NapiTypes.napi_external
-        value(JsExternal, napi_value)
+        value(NodeExternal, napi_value)
     elseif t == NapiTypes.napi_bigint
         value(BigInt, napi_value)
     else
