@@ -81,7 +81,7 @@ function value(::Type{String}, v::NapiValue; is_string = false)
         String(buf)
     else
         open_scope() do _
-            s = coerce_to_string(v)
+            s = to_string(v)
             value(String, s; is_string = true)
         end
     end

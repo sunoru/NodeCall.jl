@@ -1,17 +1,21 @@
 function run(
     script::AbstractString;
+    raw = false,
     convert_result = true
 )
     script = strip(script)
     script = startswith(script, '{') ? "($script)" : script
-    open_scope() do _
-        result = @napi_call napi_run_script(script::NapiValue)::NapiValue
-        if convert_result
-            value(result)
-        else
-            node_value(result)
-        end
+    scope = raw ? nothing : open_scope()
+    result = @napi_call napi_run_script(script::NapiValue)::NapiValue
+    ret = if raw 
+        result
+    elseif convert_result
+        value(result)
+    else
+        node_value(result)
     end
+    close_scope(scope)
+    ret
 end
 
 """

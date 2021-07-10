@@ -53,7 +53,7 @@ Base.get(o::ValueTypes, key; convert_result=true) = open_scope() do _
     convert_result ? value(v) : node_value(v)
 end
 set!(o::ValueTypes, key, value) = open_scope() do _
-    @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)::Bool
+    @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)
 end
 Base.haskey(o::ValueTypes, key) = open_scope() do _
     @napi_call napi_has_property(o::NapiValue, key::NapiValue)::Bool
@@ -67,7 +67,7 @@ Base.get(o::ValueTypes, key::AbstractString; convert_result=true) = open_scope()
     convert_result ? value(v) : node_value(v)
 end
 set!(o::ValueTypes, key::AbstractString, value) = open_scope() do _
-    @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)::Bool
+    @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)
 end
 Base.haskey(o::ValueTypes, key::AbstractString) = open_scope() do _
     @napi_call napi_has_property(o::NapiValue, key::Cstring)::Bool
@@ -81,7 +81,7 @@ Base.get(o::ValueTypes, key::Integer; convert_result=true) = open_scope() do _
     convert_result ? value(v) : node_value(v)
 end
 set!(o::ValueTypes, key::Integer, value) = open_scope() do _
-    @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)::Bool
+    @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)
 end
 Base.haskey(o::ValueTypes, key::Integer) = open_scope() do _
     @napi_call napi_has_element(o::NapiValue, key::UInt32)::Bool
@@ -95,18 +95,4 @@ Base.setproperty!(o::ValueTypes, key::Symbol, value) = set!(o, string(key), valu
 Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
 Base.propertynames(o::ValueTypes) = Symbol.(keys(o))
 Base.getindex(o::ValueTypes, key) = get(o, key)
-Base.setindex!(o::ValueTypes, key, value) = set!(o, key, value)
-
-function get_callback_info(info::NapiPointer, argc = 6)
-    argv = Vector{NapiValue}(undef, argc)
-    argc = Ref(argc)
-    this = Ref{NapiValue}
-    data = @napi_call napi_get_cb_info(
-        info::NapiPointer,
-        argc::Ptr{Csize_t}, argv::Ptr{NapiValue},
-        this::Ptr{NapiValue}
-    )::NapiPointer
-    NapiCallbackInfo(argc[], argv, this[], data)
-end
-
-create_callback(f) = @cfunction($f, NapiValue, (NapiEnv, NapiCallbackInfo))
+Base.setindex!(o::ValueTypes, value, key) = set!(o, key, value)

@@ -13,13 +13,17 @@ initialized() = _INITIALIZED[]
 function initialize!(env, addon_path)
     @debug "Initializing NodeJS..."
     _env = Ref{NapiEnv}()
-    ret = @ccall :libjlnode.initialize(addon_path::Cstring, _env::Ptr{NapiEnv})::Cint
+    ret = @ccall :libjlnode.initialize(
+        pointer_from_objref(NodeCall)::Ptr{Cvoid},
+        addon_path::Cstring,
+        _env::Ptr{NapiEnv}
+    )::Cint
     @assert ret == 0
     env.env = _env[]
-    run("""
+    run("""(() => {
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
-    """)
+    })()""")
     _initialize_types()
     Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true

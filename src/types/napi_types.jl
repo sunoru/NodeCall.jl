@@ -18,7 +18,7 @@ abstract type AbstractNapiPointer end
 primitive type NapiPointer <: AbstractNapiPointer 64 end
 primitive type NapiEnv <: AbstractNapiPointer 64 end
 primitive type NapiValue <: AbstractNapiPointer 64 end
-Base.convert(::Type{T}, x::UInt64) where T <: AbstractNapiPointer = reinterpret(T, x)
+Base.convert(::Type{T}, x::UInt64) where T <: Union{NapiEnv, NapiPointer} = reinterpret(T, x)
 Base.convert(::Type{T}, x::AbstractNapiPointer) where T <: AbstractNapiPointer = reinterpret(T, x)
 Base.convert(::Type{T}, x::NapiPointer) where T <: Ptr = reinterpret(T, x)
 Base.convert(::Type{T}, x::NapiEnv) where T <: Ptr = reinterpret(T, x)

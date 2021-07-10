@@ -54,14 +54,14 @@ Base.convert(::Type{NodeValue}, v::T) where T = NodeValue(v)
 Base.convert(::Type{NodeValue}, v::T) where T <: NodeValue = v
 Base.convert(::Type{Union{Nothing, NodeValue}}, v::T) where T <: NodeValue = v
 function node_value(
-    napi_value::NapiValue;
+    nv::NapiValue;
     tempname = nothing
 )
-    t = get_type(napi_value)
+    t = get_type(nv)
     if t ∈ (NapiTypes.napi_object, NapiTypes.napi_function)
-        NodeObject(napi_value)
+        NodeObject(nv)
     else
-        NodeValueTemp(napi_value, tempname)
+        NodeValueTemp(nv, tempname)
     end
 end
 node_value(v) = node_value(NapiValue(v))
