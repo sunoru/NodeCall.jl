@@ -51,3 +51,13 @@ function value(napi_value::NapiValue)
         nothing
     end
 end
+
+# For being called in C++ code.
+napi_value_from_value(v) = napi_value(v)
+napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
+jlnode_setindex!(o, v, k) = try
+    setindex!(o, v, k)
+    v
+catch
+    nothing
+end

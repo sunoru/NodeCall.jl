@@ -102,18 +102,21 @@ using Dates: DateTime
         a1 = rand(10)
         js_sort!(a1)
         @test issorted(a1)
-        # TODO: map dictionary and objects
-        # dict = Dict(1=>2, 3=>4, "x"=>5)
-        # node"""(d) => {
-        #     d[1] = 5
-        #     d[3] = 6
-        #     d.x = 7
-        # }"""(dict)
-        # @test dict == Dict(1=>5, 3=>6, "x"=>7)
+        # Dictionary: only support String as key type.
+        dict = Dict("1"=>2, "3"=>4, "x"=>5)
+        dict2 = node"""(d) => {
+            d[1] = 5
+            d[3] = 6
+            d.x = 7
+            return d
+        }"""(dict)
+        @test dict == Dict("1"=>5, "3"=>6, "x"=>7)
+        @test dict === dict2
         struct Foo
             x::Int
         end
         @test node"(foo) => (foo.x = 3, foo)"(Foo(5)) == Foo(3)
+        # TODO: Mutable objects
         # mutable struct FooM
         #     x::String
         # end

@@ -52,14 +52,14 @@ end
 value(::Type{T}, v::NapiValue) where T <: Number = T(value(FLoat64, v))
 value(::Type{Int64}, v::NapiValue; is_bigint = false) = if is_bigint
     ret = Ref{Int64}()
-    lossless = @napi_call napi_get_value_bigint_int64(v::NapiValue, ret::Ptr{Int64})::Bool
+    _lossless = @napi_call napi_get_value_bigint_int64(v::NapiValue, ret::Ptr{Int64})::Bool
     ret[]
 else
     @eval value(::Type{Int64}, v::NapiValue) = @napi_call napi_get_value_int64(v::NapiValue)::Int64
 end
 function value(::Type{UInt64}, v::NapiValue)
     ret = Ref{UInt64}()
-    lossless = @napi_call napi_get_value_bigint_uint64(v::NapiValue, ret::Ptr{UInt64})::Bool
+    _lossless = @napi_call napi_get_value_bigint_uint64(v::NapiValue, ret::Ptr{UInt64})::Bool
     ret[]
 end
 function value(::Type{BigInt}, v::NapiValue)

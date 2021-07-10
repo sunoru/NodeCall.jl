@@ -13,6 +13,7 @@ export NapiValue, NodeValue, JsValue,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
        JsObject, JsFunction, JsPromise
 export napi_value, node_value, value
+export create_object
 export set!, instanceof
 include("types/bases.jl")
 include("types/node_value.jl")
