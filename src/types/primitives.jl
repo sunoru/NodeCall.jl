@@ -28,7 +28,7 @@ end
 # @wrap_create_napi_value bigint_int64 Int64
 @wrap_create_napi_value bigint_uint64 UInt64
 
-napi_value(::Nothing) = get_undefined()  # TODO: undefined or null?
+napi_value(::Nothing) = get_undefined()
 napi_value(v::Bool) = @napi_call napi_get_boolean(v::Bool)::NapiValue
 napi_value(v::Number) = napi_value(Float64(v))
 napi_value(s::AbstractString) = @napi_call napi_create_string_utf8(s::Cstring, length(s)::Csize_t)::NapiValue

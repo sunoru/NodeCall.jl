@@ -24,7 +24,7 @@ using Dates: DateTime
         @test typeof(node"{}") ≡ JsObject
         @test typeof(node"[]"o) ≡ NodeObject
         # `function`
-        @test typeof(node"eval") ≡ JsFunction
+        @test typeof(node"eval") ≡ JsFunction{Nothing}
 
         # `Date`:
         @test typeof(node"new Date()") ≡ DateTime
@@ -91,13 +91,16 @@ using Dates: DateTime
         @test f2(1, 5) ≈ 6
         @test f2("a", 5) ≡ "a5"
         @test f2(node"[]", []) ≡ ""
-        f3 = node"function* generator() {
-            yield 1;
-            yield 2;
-            yield 3;
-        }"
-        # TODO: wrap generator.
-        # @test collect(f3) .≈ [1, 2, 3]
+        f3 = node"(function* f3() {
+            yield 1
+            yield 2
+            yield 3
+        })"
+        vs = []
+        for x in f3()
+            push!(vs, x)
+        end
+        @test all(vs .≈ [1, 2, 3])
         js_sort! = node"(x) => x.sort()"
         a1 = rand(10)
         js_sort!(a1)
@@ -116,13 +119,12 @@ using Dates: DateTime
             x::Int
         end
         @test node"(foo) => (foo.x = 3, foo)"(Foo(5)) == Foo(3)
-        # TODO: Mutable objects
-        # mutable struct FooM
-        #     x::String
-        # end
-        # foo_m = FooM("before")
-        # node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
-        # @test foo_m.x = "after"
+        mutable struct FooM
+            x::String
+        end
+        foo_m = FooM("before")
+        node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
+        @test foo_m.x == "after"
     end
 
     @testset "import" begin

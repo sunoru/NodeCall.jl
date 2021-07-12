@@ -6,6 +6,9 @@ catch _
     false
 end
 
+is_undefined(nv::NapiValue) = get_type(nv) == NapiTypes.napi_undefined
+is_function(nv::NapiValue) = get_type(nv) == NapiTypes.napi_function
+
 macro wrap_is_type(name)
     func_name = Symbol(:is_, name)
     napi_name = Symbol(:napi_, func_name)
@@ -26,10 +29,13 @@ const _JS_MAP = Ref{NodeObject}()
 is_map(v::NapiValue) = instanceof(v, _JS_MAP[])
 const _JS_SET = Ref{NodeObject}()
 is_set(v::NapiValue) = instanceof(v, _JS_SET[])
+const _JS_ITERATOR_SYMBOL = Ref{NodeValueTemp}()
+is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL[], nothing; raw=true))
 
 function _initialize_types()
     _JS_MAP[] = node"Map"o
     _JS_SET[] = node"Set"o
+    _JS_ITERATOR_SYMBOL[] = node"Symbol.iterator"o
 end
 
 macro wrap_coerce_convert(name)
@@ -48,9 +54,15 @@ Base.show(io::IO, v::JsObjectType) = print(io, string(
     string_pointer(getfield(v, :ref))
 ))
 
-Base.get(o::ValueTypes, key; convert_result=true) = open_scope() do _
-    v = @napi_call napi_get_property(o::NapiValue, key::NapiValue)::NapiValue
-    convert_result ? value(v) : node_value(v)
+function Base.get(
+    o::ValueTypes, key, default=nothing;
+    raw=false, convert_result=true
+)
+    with_result(raw, convert_result, this=o) do
+        nv = @napi_call napi_get_property(o::NapiValue, key::NapiValue)::NapiValue
+        is_undefined(nv) && return default
+        nv
+    end
 end
 set!(o::ValueTypes, key, value) = open_scope() do _
     @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)
@@ -62,9 +74,13 @@ Base.delete!(o::ValueTypes, key) = open_scope() do _
     @napi_call napi_delete_property(o::NapiValue, key::NapiValue)::Bool
 end
 
-Base.get(o::ValueTypes, key::AbstractString; convert_result=true) = open_scope() do _
-    v = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
-    convert_result ? value(v) : node_value(v)
+Base.get(
+    o::ValueTypes, key::AbstractString, default=nothing;
+    raw=false, convert_result=true
+) = with_result(raw, convert_result, this=o) do
+    nv = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
+    is_undefined(nv) && return default
+    nv
 end
 set!(o::ValueTypes, key::AbstractString, value) = open_scope() do _
     @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)
@@ -76,9 +92,13 @@ Base.keys(o::ValueTypes) = open_scope() do _
     value(Array, @napi_call napi_get_property_names(o::NapiValue)::NapiValue)
 end
 
-Base.get(o::ValueTypes, key::Integer; convert_result=true) = open_scope() do _
-    v = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
-    convert_result ? value(v) : node_value(v)
+Base.get(
+    o::ValueTypes, key::Integer, default=nothing;
+    raw=false, convert_result=true
+) = with_result(raw, convert_result, this=o) do
+    nv = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
+    is_undefined(nv) && return default
+    nv
 end
 set!(o::ValueTypes, key::Integer, value) = open_scope() do _
     @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)

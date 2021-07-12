@@ -19,15 +19,15 @@ catch _
     false
 end
 
-JsValue(v) = value(v)
-value(v) = v
-value(v::ValueTypes) = @with_scope value(NapiValue(v))
+JsValue(v; this=nothing) = value(v; this=this)
+value(v; this=nothing) = v
+value(v::ValueTypes; this=nothing) = @with_scope value(NapiValue(v), this=this)
 JsValue(::Type{T}, v) where T = value(T, v)
 Base.convert(::Type{T}, v::ValueTypes) where T = value(T, v)
 value(::Type{T}, v::ValueTypes) where T = @with_scope value(T, NapiValue(v))
 value(::Type{T}, v::NapiValue) where T = error("Unimplemented to convert a NapiValue to $T")
 
-function value(napi_value::NapiValue)
+function value(napi_value::NapiValue; this=nothing)
     t = get_type(napi_value)
     if t ∈ (NapiTypes.napi_undefined, NapiTypes.napi_null)
         nothing
@@ -42,7 +42,7 @@ function value(napi_value::NapiValue)
     elseif t == NapiTypes.napi_object
         object_value(napi_value)
     elseif t == NapiTypes.napi_function
-        value(JsFunction, napi_value)
+        value(JsFunction, napi_value, this=this)
     elseif t == NapiTypes.napi_external
         value(NodeExternal, napi_value)
     elseif t == NapiTypes.napi_bigint
@@ -58,6 +58,16 @@ napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
 jlnode_setindex!(o, v, k) = try
     setindex!(o, v, k)
     v
+catch
+    nothing
+end
+jlnode_getproperty(o, k) = try
+    getproperty(o, Symbol(k))
+catch
+    nothing
+end
+jlnode_setproperty!(o, k, v) = try
+    setproperty!(o, Symbol(k), v)
 catch
     nothing
 end

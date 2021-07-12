@@ -1,28 +1,32 @@
-struct JsFunction <: JsObjectType
+struct JsFunction{T <: Union{Nothing, ValueTypes}} <: JsObjectType
     ref::NodeObject
+    this::T
 end
-value(::Type{JsFunction}, v::NapiValue) = JsFunction(NodeObject(v))
+value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(NodeObject(v), this)
 
-function (func::ValueTypes)(args...; recv=nothing, raw=false, convert_result=true, pass_copy=false) 
-    scope = raw ? nothing : open_scope()
+(func::ValueTypes)(
+    args...;
+    recv=nothing, pass_copy=false,
+    raw=false, convert_result=true
+) = with_result(raw, convert_result) do
     if pass_copy
         args = deepcopy.(args)
     end
-    recv = isnothing(recv) ? get_global() : recv
+    recv = if isnothing(recv)
+        if typeof(func) <: JsFunction
+            this = getfield(func, :this)
+            isnothing(this) ? get_global() : this
+        else
+            get_global()
+        end
+    else
+        recv
+    end
     argc = length(args)
     argv = argc == 0 ? C_NULL : NapiValue.(collect(args))
-    result = @napi_call napi_call_function(
+    @napi_call napi_call_function(
         recv::NapiValue, func::NapiValue, argc::Csize_t, argv::Ptr{NapiValue}
     )::NapiValue
-    result = if raw
-        result
-    elseif convert_result
-        value(result)
-    else
-        node_value(result)
-    end
-    close_scope(scope)
-    result
 end
 
 wrap_function(f) = @cfunction($f, NapiValue, (NapiEnv, NapiCallbackInfo))
@@ -62,3 +66,14 @@ function napi_value(f::Function; name=nothing, data=nothing)
     )::NapiValue
     @show nv = add_finalizer!(nv, (_env, _data, _hint) -> delete!(JuliaFuncCache, _data), cfunc)
 end
+
+# Iterators
+# napi_value(v::AbstractIterator)
+value(::Type{JsIterator}, v::NapiValue) = JsIterator(NodeObject(v))
+function Base.iterate(v::NapiValue; raw=false, convert_result=true)
+    state = v.next(raw=true)
+    state.done && return nothing
+    result = get(state, "value", nothing; raw=raw, convert_result=convert_result)
+    result, nothing
+end
+Base.iterate(v::ValueTypes, state = nothing) = @with_scope iterate(NapiValue(v))

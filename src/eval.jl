@@ -1,21 +1,31 @@
+function with_result(f, raw::Bool, convert_result::Bool; this=nothing)
+    scope = raw ? nothing : open_scope()
+    result = f()
+    ret = if raw
+        isnothing(result) ? get_undefined() : result
+    elseif convert_result
+        value(result; this=this)
+    else
+        node_value(result)
+    end
+    close_scope(scope)
+    ret
+end
+
 function run(
     script::AbstractString;
     raw = false,
     convert_result = true
 )
     script = strip(script)
-    script = startswith(script, '{') ? "($script)" : script
-    scope = raw ? nothing : open_scope()
-    result = @napi_call napi_run_script(script::NapiValue)::NapiValue
-    ret = if raw 
-        result
-    elseif convert_result
-        value(result)
+    script = if startswith(script, '{')
+        "($script)"
     else
-        node_value(result)
+        script
     end
-    close_scope(scope)
-    ret
+    with_result(raw, convert_result) do
+        @napi_call napi_run_script(script::NapiValue)::NapiValue
+    end
 end
 
 """

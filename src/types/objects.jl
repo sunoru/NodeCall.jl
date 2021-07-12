@@ -4,6 +4,10 @@ struct JsObject <: JsObjectType
     ref::NodeObject
 end
 
+struct JsIterator <: JsObjectType
+    ref::NodeObject
+end
+
 # FIXME:
 # `define_properties!` leads to ReadOnlyMemoryError()
 function define_properties!(nv::NapiValue, properties::AbstractArray{NapiPropertyDescriptor})
@@ -14,11 +18,13 @@ function define_properties!(nv::NapiValue, properties::AbstractArray{NapiPropert
     )
     nv
 end
-function create_object(constructor=nothing, args=nothing; raw=false)
-    scope = raw ? nothing : open_scope()
+create_object(
+    constructor=nothing, args=nothing;
+    raw=false, convert_result=true
+) = with_result(raw, convert_result) do
     argv = isnothing(args) ? C_NULL : NapiValue.(collect(args))
     argc = length(argv)
-    nv = if isnothing(constructor)
+    if isnothing(constructor)
         @napi_call napi_create_object()::NapiValue
     else
         @napi_call napi_new_instance(
@@ -27,18 +33,15 @@ function create_object(constructor=nothing, args=nothing; raw=false)
             argv::Ptr{NapiValue}
         )::NapiValue
     end
-    ret = raw ? nv : value(nv)
-    close_scope(scope)
-    ret
 end
 
-function create_object(properties::AbstractArray{NapiPropertyDescriptor}; raw=false)
-    scope = raw ? nothing : open_scope()
+create_object(
+    properties::AbstractArray{NapiPropertyDescriptor};
+    raw=false, convert_result=true
+) = with_result(raw, convert_result) do
     nv = @napi_call napi_create_object()::NapiValue
     define_properties!(nv, properties)
-    ret = raw ? nv : value(nv)
-    close_scope(scope)
-    ret
+    nv
 end
 
 function create_object_dict(x)
@@ -60,21 +63,15 @@ function create_object_dict(x)
             target.__set__(prop, value)
         },
         has: (target, prop) => target.__has__(prop),
-        ownKeys: (target) => {
-            keys = target.__keys__()
-            return keys.concat(["__get__", "__set__", "__has__", "__keys__"])
-        }
+        ownKeys: (target) => target.__keys__()
+            .concat(["__get__", "__set__", "__has__", "__keys__"])
     })"""; raw=true)
     f(t; raw=true)
 end
-create_object_mutable(x) = create_object(raw=true)
-# create_object_mutable(x) = @napi_call create_object_mutable(
-#     pointer_from_objref(x)::Ptr{Cvoid}
-# )::NapiValue
-# create_object_immutable(x::T) where T = create_object([NapiPropertyDescriptor(
-#     name = k,
-#     value = getfield(x, k)
-# ) for k in fieldnames(T)])
+create_object_tuple(x) = _napi_value(collect(x))
+create_object_mutable(x) = @napi_call create_object_mutable(
+    pointer_from_objref(x)::Ptr{Cvoid}
+)::NapiValue
 function create_object_immutable(x::T) where T
     nv = create_object(raw=true)
     for k in fieldnames(T)
@@ -100,15 +97,17 @@ napi_value(v::DateTime) = @napi_call napi_create_date(datetime2unix(v)::Cdouble)
 # TODO
 const _JLTYPE_PROPERTY = "__jl_type"
 const _JLPTR_PROPERTY = "__jl_ptr"
-function napi_value(v::T; isdict=false) where T
+function napi_value(v::T; vtype = nothing) where T
     mut = ismutable(v)
     ptr = nothing
     if mut
         ptr = Ptr{Cvoid}(pointer_from_objref(v))
         haskey(JuliaObjectCache, ptr) && return NapiValue(JuliaObjectCache[ptr][2])
     end
-    nv = if isdict
+    nv = if vtype ≡ :dict
         create_object_dict(v)
+    elseif vtype ≡ :tuple
+        create_object_tuple(v)
     elseif mut
         create_object_mutable(v)
     else
@@ -121,7 +120,8 @@ function napi_value(v::T; isdict=false) where T
     end
     nv
 end
-napi_value(d::AbstractDict) = napi_value(d, isdict=true)
+napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
+napi_value(t::Tuple) = napi_value(t, vtype = :tuple)
 
 value(::Type{JsObject}, v::NapiValue) = JsObject(NodeObject(v))
 value(::Type{DateTime}, v::NapiValue) = open_scope() do _
@@ -145,6 +145,8 @@ _get_cached(v::NapiValue) = open_scope() do _
         else
             nothing
         end
+    elseif T <: Tuple
+        T((value(t, v[i-1]) for (i, t) in enumerate(T.types))...)
     else
         T((v[string(key)] for key in fieldnames(T) if string(key) != _JLTYPE_PROPERTY)...)
     end
@@ -169,6 +171,8 @@ function object_value(v::NapiValue)
         value(Dict, v)
     elseif is_set(v)
         value(Set, v)
+    elseif is_iterator(v)
+        value(JsIterator, v)
     elseif is_promise(v)
         value(JsPromise, v)
     else
