@@ -20,7 +20,7 @@ function initialize!(env, addon_path)
     )::Cint
     @assert ret == 0
     env.env = _env[]
-    run("""(() => {
+    run_node("""(() => {
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
     })()""")

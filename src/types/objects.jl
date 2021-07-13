@@ -48,7 +48,7 @@ function create_object_dict(x)
     t = @napi_call create_object_dict(
         pointer_from_objref(x)::Ptr{Cvoid}
     )::NapiValue
-    f = run(raw"""(dict) => new Proxy(dict, {
+    f = run_node(raw"""(dict) => new Proxy(dict, {
         get: (target, prop) => {
             if (prop === '__jl_type' || prop === '__jl_ptr') {
                 return Reflect.get(this, prop)

@@ -5,7 +5,7 @@ using .NapiTypes
 
 include("utils.jl")
 
-export run, @node_str, require
+export run_node, @node_str, require
 include("eval.jl")
 
 export NapiValue, NodeValue, JsValue,
@@ -25,8 +25,10 @@ include("types/functions.jl")
 include("types/external.jl")
 include("types/promises.jl")
 
-
 export global_env
 include("env.jl")
+
+export node_cmd, npm_cmd, npm, npx_cmd, npx
+include("npm.jl")
 
 end # module

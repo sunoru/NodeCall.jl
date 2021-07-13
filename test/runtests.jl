@@ -135,4 +135,10 @@ using Dates: DateTime
         @test path.resolve(".") == abspath(".")[1:end-1]
         node"const fs = require('fs')"
     end
+
+    @testset "miscs" begin
+        @test read(node_cmd("--version"), String) |> strip == "v14.17.3"
+        @test read(npm_cmd("--version"), String) |> strip == "6.14.13"
+        @test read(npx_cmd("--version"), String) |> strip == "6.14.13"
+    end
 end

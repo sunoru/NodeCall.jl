@@ -12,7 +12,7 @@ function with_result(f, raw::Bool, convert_result::Bool; this=nothing)
     ret
 end
 
-function run(
+function run_node(
     script::AbstractString;
     raw = false,
     convert_result = true
@@ -39,8 +39,8 @@ indicates the return value should not be converted.
 macro node_str(code, options...)
     keep_raw = length(options) == 1 && 'o' in options[1]
     quote
-        run($code; convert_result=!$keep_raw)
+        run_node($code; convert_result=!$keep_raw)
     end
 end
 
-require(id::AbstractString) = run("globalThis.require('$(id)')")
+require(id::AbstractString) = run_node("globalThis.require('$(id)')")
