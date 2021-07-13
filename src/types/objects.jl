@@ -87,8 +87,7 @@ function add_jltype!(nv, ::Type{T}) where T
 end
 
 napi_value(js_object::JsObjectType) = convert(NapiValue, getfield(js_object, :ref))
-napi_value(v::DateTime) = @napi_call napi_create_date(datetime2unix(v)::Cdouble)::NapiValue
-# TODO
+napi_value(v::DateTime) = @napi_call napi_create_date((datetime2unix(v) * 1000)::Cdouble)::NapiValue
 const _JLTYPE_PROPERTY = "__jl_type"
 const _JLPTR_PROPERTY = "__jl_ptr"
 function napi_value(v::T; vtype = nothing) where T
