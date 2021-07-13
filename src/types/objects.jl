@@ -80,15 +80,9 @@ function create_object_immutable(x::T) where T
     nv
 end
 
-const JuliaTypeCache = Dict{Ptr{Type}, Type}()
-const JuliaObjectCache = Dict{Ptr{Cvoid}, Tuple{Any, NodeObject}}()
 # function add_jltype(::Type{T}) where T
 function add_jltype!(nv, ::Type{T}) where T
-    p = Ptr{Type}(pointer_from_objref(T))
-    if !haskey(JuliaTypeCache, p)
-         JuliaTypeCache[p] = T
-    end
-    nv[_JLTYPE_PROPERTY] = UInt64(p)
+    nv[_JLTYPE_PROPERTY] = NodeExternal(T)
     nv
 end
 
@@ -101,8 +95,9 @@ function napi_value(v::T; vtype = nothing) where T
     mut = ismutable(v)
     ptr = nothing
     if mut
-        ptr = Ptr{Cvoid}(pointer_from_objref(v))
-        haskey(JuliaObjectCache, ptr) && return NapiValue(JuliaObjectCache[ptr][2])
+        ptr = pointer_from_objref(v)
+        nv = NodeExternal(ptr)
+        isnothing(nv) || return NapiValue(nv)
     end
     nv = if vtype ≡ :dict
         create_object_dict(v)
@@ -115,8 +110,7 @@ function napi_value(v::T; vtype = nothing) where T
     end
     add_jltype!(nv, T)
     if mut
-        nv[_JLPTR_PROPERTY] = UInt64(ptr)
-        JuliaObjectCache[ptr] = (v, node_value(nv))
+        nv[_JLPTR_PROPERTY] = NodeExternal(v)
     end
     nv
 end
@@ -130,21 +124,16 @@ value(::Type{DateTime}, v::NapiValue) = open_scope() do _
 end
 
 _get_cached(v::NapiValue) = open_scope() do _
-    jltype = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
-    get_type(jltype) == NapiTypes.napi_undefined && return nothing
-    jltype_ptr = Ptr{Type}(value(UInt64, jltype))
-    T = get(JuliaTypeCache, jltype_ptr, nothing)
+    jltype_external = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
+    get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
+    jltype = value(NodeExternal, jltype_external)::NodeExternal{DataType}
+    T = value(jltype)
     isnothing(T) && return nothing
     if T.mutable
-        jlobject = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
-        get_type(jlobject) == NapiTypes.napi_undefined && return nothing
-        jlobject_ptr = Ptr{Cvoid}(value(UInt64, jlobject))
-        JuliaObjectCache
-        if haskey(JuliaObjectCache, jlobject_ptr)
-            JuliaObjectCache[jlobject_ptr][1]
-        else
-            nothing
-        end
+        jlobject_external = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
+        get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
+        jlobject = value(NodeExternal, jlobject_external)
+        isnothing(jlobject) ? nothing : value(jlobject)
     elseif T <: Tuple
         T((value(t, v[i-1]) for (i, t) in enumerate(T.types))...)
     else

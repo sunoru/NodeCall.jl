@@ -1,30 +1,50 @@
-struct NodeExternal{T} <: NodeValue
-    ptr::Ref{T}
-    external_finalizer::Union{Nothing, Function}
-end
-NodeExternal(v::Ref{T}, f=nothing) where T = NodeExternal{T}(v, f)
-NodeExternal(v::NapiPointer, f=nothing) = NodeExternal(Ptr{Cvoid}(v), f)
-NodeExternal(v::T, f=nothing) where T = NodeExternal{T}(Ptr{T}(pointer_from_objref(v)), f)
+using Base: RefValue
 
-Base.pointer(js::NodeExternal) = getfield(js, :ptr)
+mutable struct NodeExternal{T} <: NodeValue
+    ref::RefValue{T}
+    count::Int
+end
+function NodeExternal(v::RefValue{T}) where T 
+    ptr = Ptr{Cvoid}(pointer_from_objref(T.mutable ? v[] : v))
+    if haskey(ExternalCache, ptr)
+        ne = ExternalCache[ptr]
+        setfield!(ne, :count, count(ne) + 1)
+        ne
+    else
+        ExternalCache[ptr] = NodeExternal{T}(v, 1)
+    end
+end
+NodeExternal(v) = NodeExternal(Ref(v))
+function NodeExternal(v::Ptr)
+    v = Ptr{Cvoid}(v)
+    get(ExternalCache, v, nothing)
+end 
+
+const ExternalCache = Dict{Ptr{Cvoid}, NodeExternal}()
+
+function Base.pointer(js::NodeExternal{T}) where T
+    ref = getfield(js, :ref)
+    pointer_from_objref(T.mutable ? ref[] : ref)
+end
+value(v::NodeExternal) = getfield(v, :ref)[]
+count(v::NodeExternal) = getfield(v, :count)
 
 Base.show(io::IO, v::NodeExternal) = print(io, string(
-    typeof(v), ": ", string_pointer(pointer(v))
+    typeof(v), ": ", getfield(v, :ref)[], " (", count(v), ")"
 ))
 
 node_value(v::NodeExternal) = v
 
-function napi_value(v::NodeExternal)
-    external_finalizer = getfield(v, :external_finalizer)
-    callback = if isnothing(external_finalizer)
-        C_NULL
-    else
-        @cfunction($external_finalizer, Cvoid, ())
+function external_finalize(ptr::Ptr{Cvoid})
+    ne = NodeExternal(ptr)
+    isnothing(ne) && return
+    setfield!(ne, :count, count(ne) - 1)
+    if count(ne) == 0
+        delete!(ExternalCache, data)
     end
-    @napi_call napi_create_external(
-        pointer(v)::NapiPointer, callback::NapiFinalize, C_NULL::NapiPointer
-    )::NapiValue
 end
+
+napi_value(v::NodeExternal) = @napi_call create_external(pointer(v)::NapiPointer)::NapiValue
 value(::Type{NodeExternal{T}}, v::NapiValue) where T = NodeExternal(
     Ptr{T}(@napi_call napi_get_value_external(v::NapiValue)::NapiPointer)
 )
