@@ -62,6 +62,7 @@ end
 # Pointer => (ArrayBuffer, ByteSize, RefCount)
 const ArrayBufferCache = Dict{Ptr{Cvoid}, Tuple{NodeObject, Int, Int}}()
 array_finalizer(arraybuffer) = open_scope() do _
+    initialized() || return
     ptr = arraybuffer_info(napi_value(arraybuffer)).data
     haskey(ArrayBufferCache, ptr) || return
     v, byte_length, ref_count = ArrayBufferCache[ptr]

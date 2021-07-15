@@ -33,9 +33,9 @@ end
 
 function dispose(env)
     @debug "Disposing NodeJS..."
+    _INITIALIZED[] = false
     ret = @ccall :libjlnode.dispose()::Cint
     @assert ret == 0
-    _INITIALIZED[] = false
     @debug "NodeJS disposed."
 end
 

@@ -141,4 +141,13 @@ using Dates: DateTime
         @test read(npm_cmd("--version"), String) |> strip == "6.14.13"
         @test read(npx_cmd("--version"), String) |> strip == "6.14.13"
     end
+
+    @testset "arrays" begin
+        arr1 = rand(Float64, 10)
+        arr2 = reinterpret(UInt8, arr1)
+        @test node"""(a, b) => a instanceof Float64Array &&
+            b instanceof Uint8Array &&
+            a.buffer === b.buffer
+        """(a, b)
+    end
 end
