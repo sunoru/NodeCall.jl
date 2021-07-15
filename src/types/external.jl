@@ -5,11 +5,11 @@ struct NodeExternal <: NodeValue
     NodeExternal(ptr::Ptr{Cvoid}) = new(ptr)
 end
 
-NodeExternal(v) = NodeExternal(make_reference(v))
+NodeExternal(v) = NodeExternal(pointer(reference(v)))
 NodeExternal(nv::NapiValue) = NodeExternal(@napi_call napi_get_value_external(nv::NapiValue)::Ptr{Cvoid})
 
 Base.pointer(v::NodeExternal) = getfield(v, :ptr)
-value(v::NodeExternal) = get_reference(pointer(v))
+value(v::NodeExternal) = get_reference(pointer(v))[]
 
 Base.show(io::IO, v::NodeExternal) = print(io, string(
     typeof(v), ": ", value(v)

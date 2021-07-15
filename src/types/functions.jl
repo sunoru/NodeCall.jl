@@ -43,9 +43,8 @@ function get_callback_info(env::NapiEnv, info::NapiPointer, argc = 6)
     NapiCallbackInfo(argc[], argv, this[], data)
 end
 
-const JuliaFuncCache = IdDict{Base.CFunction, Function}()
-# TODO: avoid ReadOnlyMemoryError.
 function napi_value(f::Function; name=nothing, data=nothing)
+    ref = reference(f)
     func = (env::NapiEnv, _info::NapiPointer) -> begin
         info = get_callback_info(env, _info)
         # f(info.argv...)

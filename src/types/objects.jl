@@ -96,7 +96,7 @@ function napi_value(v::T; vtype = nothing) where T
     if mut
         ptr = pointer_from_objref(v)
         nv = get_reference(ptr)
-        isnothing(nv) || return NapiValue(nv)
+        isnothing(nv) || return NapiValue(nv[])
     end
     nv = if vtype ≡ :dict
         create_object_dict(v)
@@ -200,8 +200,8 @@ function make_set(v::NapiValue)
 end
 
 function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
-    f_ptr = make_reference(f)
-    data_ptr = isnothing(data) ? C_NULL : make_reference(data)
+    f_ptr = pointer(reference(f))
+    data_ptr = isnothing(data) ? C_NULL : pointer(reference(data))
     @napi_call add_finalizer(
         nv::NapiValue, f_ptr::Ptr{Cvoid}, data_ptr::Ptr{Cvoid}
     )
@@ -209,7 +209,7 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
 end
 
 function object_finalizer(f_ptr, data_ptr)
-    f = dereference(f_ptr)
+    f = value(dereference(f_ptr))
     data = dereference(data_ptr)
-    f(data)
+    f(value(data))
 end

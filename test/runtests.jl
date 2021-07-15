@@ -56,7 +56,7 @@ using Dates: DateTime
         @test typeof(node"new DataView(new ArrayBuffer(1))") ≡ Vector{UInt8}
         @test instanceof(node_value(Vector{Float64}()), node"Float64Array")
         # `Promise`
-        @test typeof(node"new Promise(()=>{})") ≡ JsPromise  # TODO: implement Promise
+        @test typeof(node"new Promise(()=>{})") ≡ JsPromise
     end
 
     @testset "eval" begin
@@ -143,11 +143,20 @@ using Dates: DateTime
     end
 
     @testset "arrays" begin
-        arr1 = rand(Float64, 10)
-        arr2 = reinterpret(UInt8, arr1)
+        a = rand(Float64, 10)
+        b = reinterpret(UInt8, arr1)
         @test node"""(a, b) => a instanceof Float64Array &&
             b instanceof Uint8Array &&
             a.buffer === b.buffer
         """(a, b)
+        buffer = node_value(a).buffer
+        @test typeof(buffer) ≡ Vector{UInt8}
+        @test buffer == node_value(b).buffer
+    end
+
+    @testset "promises" begin
+        p = node"""async (x) => {
+
+        }"""
     end
 end
