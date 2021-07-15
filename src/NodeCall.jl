@@ -3,6 +3,7 @@ module NodeCall
 include("types/napi_types.jl")
 using .NapiTypes
 
+include("refs.jl")
 include("utils.jl")
 
 export run_node, @node_str, require

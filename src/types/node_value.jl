@@ -60,6 +60,8 @@ function node_value(
     t = get_type(nv)
     if t ∈ (NapiTypes.napi_object, NapiTypes.napi_function)
         NodeObject(nv)
+    elseif t == NapiTypes.napi_external
+        NodeExternal(nv)
     else
         NodeValueTemp(nv, tempname)
     end

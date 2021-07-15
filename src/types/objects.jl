@@ -95,7 +95,7 @@ function napi_value(v::T; vtype = nothing) where T
     ptr = nothing
     if mut
         ptr = pointer_from_objref(v)
-        nv = NodeExternal(ptr)
+        nv = get_reference(ptr)
         isnothing(nv) || return NapiValue(nv)
     end
     nv = if vtype ≡ :dict
@@ -125,14 +125,12 @@ end
 _get_cached(v::NapiValue) = open_scope() do _
     jltype_external = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
     get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
-    jltype = value(NodeExternal, jltype_external)::NodeExternal{DataType}
-    T = value(jltype)
+    T = value(NodeExternal, jltype_external)::DataType
     isnothing(T) && return nothing
     if T.mutable
         jlobject_external = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
         get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
-        jlobject = value(NodeExternal, jlobject_external)
-        isnothing(jlobject) ? nothing : value(jlobject)
+        value(NodeExternal(jlobject_external))
     elseif T <: Tuple
         T((value(t, v[i-1]) for (i, t) in enumerate(T.types))...)
     else
@@ -201,13 +199,17 @@ function make_set(v::NapiValue)
     Set(vs)
 end
 
-finalize_callback(f::Function) = @cfunction($f, Cvoid, (NapiEnv, Ptr{Cvoid}, Ptr{Cvoid}))
-
-function add_finalizer!(nv::NapiValue, f, data=nothing)
-    data = isnothing(data) ? C_NULL : data
-    @napi_call napi_add_finalizer(
-        nv::NapiValue, data::Ptr{Cvoid},
-        finalize_callback(f)::NapiFinalize, C_NULL::Ptr{Cvoid}
-    )::NapiRef
+function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
+    f_ptr = make_reference(f)
+    data_ptr = isnothing(data) ? C_NULL : make_reference(data)
+    @napi_call add_finalizer(
+        nv::NapiValue, f_ptr::Ptr{Cvoid}, data_ptr::Ptr{Cvoid}
+    )
     nv
+end
+
+function object_finalizer(f_ptr, data_ptr)
+    f = dereference(f_ptr)
+    data = dereference(data_ptr)
+    f(data)
 end

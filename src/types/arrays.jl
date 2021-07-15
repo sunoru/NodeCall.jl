@@ -50,6 +50,7 @@ function arraybuffer_info(arr::NapiValue)
     byte_length = @napi_call napi_get_arraybuffer_info(arr::NapiValue, data::Ptr{Ptr{Cvoid}})::Csize_t
     NapiArrayBufferInfo(data[], byte_length)
 end
+
 function _napi_value(v::AbstractArray)
     n = length(v)
     nv = @napi_call napi_create_array_with_length(n::Csize_t)::NapiValue
@@ -58,7 +59,18 @@ function _napi_value(v::AbstractArray)
     end
     nv
 end
-function _napi_value(v::AbstractArray, typedarray_type; copy_array=false)
+# Pointer => (ArrayBuffer, ByteSize, RefCount)
+const ArrayBufferCache = Dict{Ptr{Cvoid}, Tuple{NodeObject, Int, Int}}()
+array_finalizer(arraybuffer) = open_scope() do _
+    ptr = arraybuffer_info(napi_value(arraybuffer)).data
+    haskey(ArrayBufferCache, ptr) || return
+    v, byte_length, ref_count = ArrayBufferCache[ptr]
+    if ref_count > 1
+        ArrayBufferCache[ptr] = (v, byte_length, ref_count - 1)
+    end
+end
+const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}}
+function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
     isnothing(typedarray_type) && return _napi_value(v)
     T = eltype(v)
     n = length(v)
@@ -67,22 +79,36 @@ function _napi_value(v::AbstractArray, typedarray_type; copy_array=false)
         data = Ref{Ptr{Cvoid}}()
         ab = @napi_call napi_create_arraybuffer(byte_length::Csize_t, data::Ptr{Ptr{Cvoid}})::NapiValue
         @ccall memcpy(data[]::Ptr{Cvoid}, v::Ptr{Cvoid}, byte_length::Csize_t)::Ptr{Cvoid}
-        ab
+        NodeObject(ab)
     else
-        @napi_call napi_create_external_arraybuffer(
-            v::Ptr{Cvoid}, byte_length::Csize_t,
-            C_NULL::NapiPointer, C_NULL::NapiPointer
-        )::NapiValue
+        ptr = Ptr{Cvoid}(pointer(v))
+        ab, byte_length2, ref_count = get(ArrayBufferCache, ptr) do
+            ab = @napi_call napi_create_external_arraybuffer(
+                v::Ptr{Cvoid}, byte_length::Csize_t,
+                C_NULL::NapiPointer, C_NULL::NapiPointer
+            )::NapiValue
+            NodeObject(ab), byte_length, 0
+        end
+        @assert byte_length == byte_length2
+        ArrayBufferCache[ptr] = (ab, byte_length, ref_count + 1)
+        ab
     end
-    @napi_call napi_create_typedarray(typedarray_type::NapiTypedArrayType, n::Csize_t, arraybuffer::NapiValue, 0::Csize_t)::NapiValue
+    nv = @napi_call napi_create_typedarray(
+        typedarray_type::NapiTypedArrayType, n::Csize_t,
+        arraybuffer::NapiValue, 0::Csize_t
+    )::NapiValue
+    add_finalizer!(nv, array_finalizer, arraybuffer)
+    nv
 end
 
-function napi_value(v::AbstractArray; copy_array=false, typedarray_type=nothing)
+function napi_value(
+    v::TypedCompatibleArray{T};
+    copy_array=false, typedarray_type=nothing
+) where T
     isnothing(typedarray_type) || return _napi_value(v, typedarray_type; copy_array=copy_array)
-    T = eltype(v)
     _napi_value(v, if T == Int8
         NapiTypes.napi_int8_array
-    elseif T == UInt8
+    elseif T == UInt8 
         NapiTypes.napi_uint8_array
     elseif T == Int16
         NapiTypes.napi_int16_array
@@ -104,6 +130,7 @@ function napi_value(v::AbstractArray; copy_array=false, typedarray_type=nothing)
         nothing
     end; copy_array=copy_array)
 end
+napi_value(v::AbstractArray) = _napi_value(v, nothing)
 
 napi_value(v::AbstractSet) = napi_value(collect(v))
 
