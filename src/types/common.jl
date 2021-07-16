@@ -36,6 +36,12 @@ function _initialize_types()
     _JS_MAP[] = node"Map"o
     _JS_SET[] = node"Set"o
     _JS_ITERATOR_SYMBOL[] = node"Symbol.iterator"o
+    _JS_MAKE_PROMISE[] = node"""(promise, resolve, reject) => {
+        const p = promise
+            .then(resolve).catch(reject)
+        setTimeout(() => undefined, 0)
+        return p
+    }"""o
 end
 
 macro wrap_coerce_convert(name)

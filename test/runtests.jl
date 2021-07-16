@@ -1,5 +1,5 @@
 using NodeCall, Test
-using Dates: DateTime
+using Dates: DateTime, now, Millisecond
 
 @testset "NodeCall.jl" begin
 
@@ -155,8 +155,22 @@ using Dates: DateTime
     end
 
     @testset "promises" begin
-        p = node"""async (x) => {
-
+        js_sleep = node"""(ms) => new Promise(
+            resolve => setTimeout(() => resolve(ms), ms)
+        )"""
+        t = now()
+        p = js_sleep(500)
+        @test wait(p) == 500
+        @test now() - t ≥ Millisecond(500)
+        async_f = node"""async (x) => {
+            return x * 2
         }"""
+        y = 0
+        p = async_f(50).then() do x
+            y = x
+            x * 2
+        end
+        @test wait(p) == 200
+        @test y == 100
     end
 end

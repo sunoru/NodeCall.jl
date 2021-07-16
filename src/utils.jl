@@ -36,12 +36,12 @@ macro napi_call(env, sym)
 end
 macro napi_call(sym)
     esc(quote
-        env = global_env()
+        env = node_env()
         @napi_call env $sym
     end)
 end
 
-function throw_error(env::NapiEnv = global_env())
+function throw_error(env::NapiEnv = node_env())
     info = @napi_call env napi_get_last_error_info()::Ptr{NapiExtendedErrorInfo}
     is_exception_pending = @napi_call env napi_is_exception_pending()::Bool
     err = if is_exception_pending
