@@ -43,27 +43,21 @@ function get_callback_info(env::NapiEnv, info::NapiPointer, argc = 6)
     NapiCallbackInfo(argc[], argv, this[], data)
 end
 
-function napi_value(f::Function; name=nothing, data=nothing)
-    ref = reference(f)
-    func = (env::NapiEnv, _info::NapiPointer) -> begin
-        info = get_callback_info(env, _info)
-        # f(info.argv...)
-        @show info
-    end
-    cfunc = wrap_function(func)
-    JuliaFuncCache[cfunc] = func
-    name, len = if isnothing(name)
-        C_NULL, 0
-    else
-        name, length(name)
-    end
-    data = isnothing(data) ? C_NULL : data
-    
-    nv = @napi_call napi_create_function(
-        name::Cstring, len::Csize_t,
-        cfunc::NapiCallback, data::Ptr{Cvoid}
-    )::NapiValue
-    @show nv = add_finalizer!(nv, (_env, _data, _hint) -> delete!(JuliaFuncCache, _data), cfunc)
+function call_function(func_ptr::Ptr{Cvoid}, args_ptr::Ptr{Cvoid}, argc::Csize_t, _recv::Ptr{Cvoid})
+    func = get_reference(func_ptr)
+    args_ptr = Ptr{NapiValue}(args_ptr)
+    args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
+    NapiValue(func[](args...))
+end
+
+function_finalizer(func_ptr) = dereference(func_ptr)
+
+function napi_value(f::Function; name=nothing)
+    func_ptr = pointer(reference(f))
+    name = isnothing(name) ? C_NULL : name
+    nv = @napi_call create_function(func_ptr::Ptr{Cvoid}, name::Cstring)::NapiValue
+    add_finalizer!(nv, function_finalizer, func_ptr)
+    nv
 end
 
 # Iterators

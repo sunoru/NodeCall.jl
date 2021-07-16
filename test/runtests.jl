@@ -144,7 +144,7 @@ using Dates: DateTime
 
     @testset "arrays" begin
         a = rand(Float64, 10)
-        b = reinterpret(UInt8, arr1)
+        b = reinterpret(UInt8, a)
         @test node"""(a, b) => a instanceof Float64Array &&
             b instanceof Uint8Array &&
             a.buffer === b.buffer

@@ -15,9 +15,11 @@ const ReferenceCache = Dict{Ptr{Cvoid}, ReferenceEntry}()
 
 get_reference(id::Union{UInt64, Ptr}) = get(ReferenceCache, Ptr{Cvoid}(id), nothing)
 
-delete_reference(id::Union{UInt64, Ptr}) = delete!(ReferenceCache, Ptr{Cvoid}(id))
+delete_reference(id::Union{UInt64, Ptr}) = let ref = pop!(ReferenceCache, Ptr{Cvoid}(id), nothing)
+    !isnothing(ref) && delete!(ObjectReference, ref[])
+end
 
-function reference(object::T) where T
+function make_reference(object::T) where T
     ref = get!(ObjectReference, object) do
         Ref(object)
     end
@@ -27,12 +29,16 @@ function reference(object::T) where T
     end
     ReferenceCache[ptr] = ReferenceEntry(entry.ref, entry.count + 1)
 end
+reference(object) = make_reference(object)
 function reference(id::Union{UInt64, Ptr})
     ptr = Ptr{Cvoid}(id)
     entry = pop!(ReferenceCache, ptr, nothing)
     isnothing(entry) && return nothing
     ReferenceCache[ptr] = ReferenceEntry(entry.ref, entry.count + 1)
 end
+dereference(object::T) where T = haskey(ObjectReference, object) ? dereference(
+    pointer_from_objref(T.mutable ? object : ObjectReference[object])
+) : nothing
 function dereference(id::Union{UInt64, Ptr})
     ptr = Ptr{Cvoid}(id)
     entry = pop!(ReferenceCache, ptr, nothing)
@@ -40,6 +46,8 @@ function dereference(id::Union{UInt64, Ptr})
     ref = ReferenceEntry(entry.ref, entry.count - 1)
     if entry.count > 1
         ReferenceCache[ptr] = ref
+    else
+        delete!(ObjectReference, ref[])
     end
     ref
 end
