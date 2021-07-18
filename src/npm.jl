@@ -1,4 +1,4 @@
-using libjlnode_jll: node_path, artifact_dir
+using libnode_jll: node_path, artifact_dir
 
 const NPM_DIR = joinpath(artifact_dir, "lib", "node_modules", "npm")
 

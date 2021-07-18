@@ -20,9 +20,7 @@ initialized() = _INITIALIZED[]
   UV_RUN_NOWAIT
 end
 # It has to been called manually for now.
-# HELP WANTED: Fix "RangeError: Maximum call stack size exceeded"
-# when calling with @async or using uv_idle_t,
-# try to connect uv loops of Julia and NodeJS.
+# HELP WANTED: https://github.com/sunoru/NodeCall.jl/issues/1
 function run_node_uvloop(mode::UvRunMode=UV_RUN_ONCE)
     node_loop = node_uvloop()
     @ccall :libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
@@ -36,13 +34,10 @@ function run_node_uvloop(mode::UvRunMode=UV_RUN_ONCE)
     # end
 end
 
-function initialize!(env, addon_path)
+function initialize!(env, addon_path, args)
     @debug "Initializing NodeJS..."
     _env = Ref{NapiEnv}()
     loop = Ref{Ptr{Cvoid}}()
-    args = String[
-        "--trace-uncaught"
-    ]
     ret = @ccall :libjlnode.initialize(
         pointer_from_objref(NodeCall)::Ptr{Cvoid},
         addon_path::Cstring,
@@ -66,7 +61,7 @@ function initialize!(env, addon_path)
     env
 end
 
-function dispose(env)
+function dispose!(env)
     @debug "Disposing NodeJS..."
     _INITIALIZED[] = false
     ret = @ccall :libjlnode.dispose()::Cint
@@ -74,7 +69,14 @@ function dispose(env)
     @debug "NodeJS disposed."
 end
 
+function restart_node(args=split(get(ENV, "JLNODE_ARGS", "")))
+    if initialized()
+        dispose!(_GLOBAL_ENV)
+    end
+    initialize!(_GLOBAL_ENV, jlnode_addon, args)
+end
+
 function __init__()
-    initialize!(_GLOBAL_ENV, jlnode_addon)
-    finalizer(dispose, _GLOBAL_ENV)
+    restart_node()
+    finalizer(dispose!, _GLOBAL_ENV)
 end

@@ -1,5 +1,8 @@
 module NodeCall
 
+using libnode_jll
+using libjlnode_jll
+
 include("types/napi_types.jl")
 using .NapiTypes
 
@@ -26,7 +29,7 @@ include("types/functions.jl")
 include("types/external.jl")
 include("types/promises.jl")
 
-export node_env, node_uvloop
+export node_env, node_uvloop, restart_node
 include("env.jl")
 
 export node_cmd, npm_cmd, npm, npx_cmd, npx
