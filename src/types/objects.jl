@@ -48,7 +48,7 @@ function create_object_dict(x)
     t = @napi_call create_object_dict(
         pointer_from_objref(x)::Ptr{Cvoid}
     )::NapiValue
-    f = run_node(raw"""(dict) => new Proxy(dict, {
+    f = run_script(raw"""(dict) => new Proxy(dict, {
         get: (target, prop) => {
             if (prop === '__jl_type' || prop === '__jl_ptr') {
                 return Reflect.get(this, prop)
@@ -117,12 +117,12 @@ napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
 napi_value(t::Tuple) = napi_value(t, vtype = :tuple)
 
 value(::Type{JsObject}, v::NapiValue) = JsObject(NodeObject(v))
-value(::Type{DateTime}, v::NapiValue) = open_scope() do _
+value(::Type{DateTime}, v::NapiValue) = @with_scope begin
     val = @napi_call napi_get_date_value(v::NapiValue)::Cdouble
     unix2datetime(val / 1000)
 end
 
-_get_cached(v::NapiValue) = open_scope() do _
+_get_cached(v::NapiValue) = @with_scope begin
     jltype_external = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
     get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
     T = value(NodeExternal, jltype_external)::DataType

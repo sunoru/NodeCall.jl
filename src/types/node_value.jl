@@ -2,7 +2,7 @@ import UUIDs: uuid4
 
 const tempvar_name = "__jlnode_tmp"
 
-get_tempvar(tempname = nothing) = open_scope() do _
+get_tempvar(tempname = nothing) = @with_scope begin
     temp = get(get_global(), tempvar_name; convert_result=false)
     isnothing(tempname) ? temp : temp[tempname]
 end
@@ -19,7 +19,7 @@ mutable struct NodeValueTemp <: NodeValue
     end
 end
 
-NodeValueTemp(v::NapiValue, tempname=nothing) = open_scope() do _
+NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
     tempname = isnothing(tempname) ? string(uuid4(global_rng())) : tempname
     tempvar = get_tempvar()
     tempvar[tempname] = v

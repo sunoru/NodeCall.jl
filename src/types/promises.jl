@@ -5,14 +5,14 @@ struct JsPromise <: JsObjectType
     ref::NodeObject
 end
 
-promise_resolve(deferred) = (x) -> open_scope() do _
+promise_resolve(deferred) = (x) -> @with_scope begin
     @napi_call napi_resolve_deferred(deferred::NapiDeferred, x::NapiValue)
 end
-promise_reject(deferred) = (x) -> open_scope() do _
+promise_reject(deferred) = (x) -> @with_scope begin
     @napi_call napi_reject_deferred(deferred::NapiDeferred, x::NapiValue)
 end
 
-JsPromise(f::Function) = open_scope() do _
+JsPromise(f::Function) = @with_scope begin
     nv = Ref{NapiValue}()
     deferred = @napi_call napi_create_promise(nv::Ptr{NapiValue})::NapiDeferred
     @async f((promise_resolve(deferred), promise_reject(deferred)))
@@ -63,7 +63,7 @@ Base.wait(
     # wait(cond)
 
     while isnothing(success[])
-        run_node_uvloop(UV_RUN_ONCE)
+        run_script_uvloop(UV_RUN_ONCE)
     end
     if success[]
         result[]

@@ -9,7 +9,7 @@ using .NapiTypes
 include("refs.jl")
 include("utils.jl")
 
-export run_node, @node_str, require
+export run_script, @node_str, require
 include("eval.jl")
 
 export NapiValue, NodeValue, JsValue,
@@ -29,10 +29,13 @@ include("types/functions.jl")
 include("types/external.jl")
 include("types/promises.jl")
 
-export node_env, node_uvloop, restart_node
+export current_context, new_context, delete_context, switch_context
+include("contexts.jl")
+
+export node_env, node_uvloop
 include("env.jl")
 
-export node_cmd, npm_cmd, npm, npx_cmd, npx
-include("npm.jl")
+export node, npm, npx
+include("executables.jl")
 
 end # module

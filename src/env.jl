@@ -6,9 +6,10 @@ using libjlnode_jll
 mutable struct EnvironmentConfig
     env::NapiEnv
     loop::Ptr{Cvoid}
+    context_index::Int
 end
 
-const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL)
+const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL, 0)
 node_env() = _GLOBAL_ENV.env
 node_uvloop() = _GLOBAL_ENV.loop
 const _INITIALIZED = Ref(false)
@@ -21,7 +22,7 @@ initialized() = _INITIALIZED[]
 end
 # It has to been called manually for now.
 # HELP WANTED: https://github.com/sunoru/NodeCall.jl/issues/1
-function run_node_uvloop(mode::UvRunMode=UV_RUN_ONCE)
+function run_script_uvloop(mode::UvRunMode=UV_RUN_ONCE)
     node_loop = node_uvloop()
     @ccall :libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
     # @async begin
@@ -49,14 +50,15 @@ function initialize!(env, addon_path, args)
     @assert ret == 0
     env.env = _env[]
     env.loop = loop[]
-    run_node("""(() => {
+    run_script("""(() => {
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
-    })()""")
+    })()""", raw=true, context=nothing)
     _initialize_types()
+    _initialize_context()
     Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true
-    # run_node_uvloop()
+    # run_script_uvloop()
     @debug "NodeJS initialized."
     env
 end

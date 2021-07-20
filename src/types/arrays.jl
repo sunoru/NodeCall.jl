@@ -1,4 +1,4 @@
-Base.length(v::ValueTypes) = Int(open_scope() do _
+Base.length(v::ValueTypes) = Int(@with_scope begin
     nv = NapiValue(v)
     if is_typedarray(nv)
         get_array_info(nv, :typedarray).length
@@ -61,7 +61,7 @@ function _napi_value(v::AbstractArray)
 end
 # Pointer => (ArrayBuffer, ByteSize, RefCount)
 const ArrayBufferCache = Dict{Ptr{Cvoid}, Tuple{NodeObject, Int, Int}}()
-array_finalizer(arraybuffer) = open_scope() do _
+array_finalizer(arraybuffer) = @with_scope begin
     initialized() || return
     ptr = arraybuffer_info(napi_value(arraybuffer)).data
     haskey(ArrayBufferCache, ptr) || return

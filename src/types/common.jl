@@ -57,7 +57,7 @@ end
 
 Base.show(io::IO, v::JsObjectType) = print(io, string(
     typeof(v), ": ",
-    string_pointer(getfield(v, :ref))
+    value(String, getfield(v, :ref))
 ))
 
 function Base.get(
@@ -70,13 +70,13 @@ function Base.get(
         nv
     end
 end
-set!(o::ValueTypes, key, value) = open_scope() do _
+set!(o::ValueTypes, key, value) = @with_scope begin
     @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)
 end
-Base.haskey(o::ValueTypes, key) = open_scope() do _
+Base.haskey(o::ValueTypes, key) = @with_scope begin
     @napi_call napi_has_property(o::NapiValue, key::NapiValue)::Bool
 end
-Base.delete!(o::ValueTypes, key) = open_scope() do _
+Base.delete!(o::ValueTypes, key) = @with_scope begin
     @napi_call napi_delete_property(o::NapiValue, key::NapiValue)::Bool
 end
 
@@ -88,13 +88,13 @@ Base.get(
     is_undefined(nv) && return default
     nv
 end
-set!(o::ValueTypes, key::AbstractString, value) = open_scope() do _
+set!(o::ValueTypes, key::AbstractString, value) = @with_scope begin
     @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)
 end
-Base.haskey(o::ValueTypes, key::AbstractString) = open_scope() do _
+Base.haskey(o::ValueTypes, key::AbstractString) = @with_scope begin
     @napi_call napi_has_property(o::NapiValue, key::Cstring)::Bool
 end
-Base.keys(o::ValueTypes) = open_scope() do _
+Base.keys(o::ValueTypes) = @with_scope begin
     value(Array, @napi_call napi_get_property_names(o::NapiValue)::NapiValue)
 end
 
@@ -106,13 +106,13 @@ Base.get(
     is_undefined(nv) && return default
     nv
 end
-set!(o::ValueTypes, key::Integer, value) = open_scope() do _
+set!(o::ValueTypes, key::Integer, value) = @with_scope begin
     @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)
 end
-Base.haskey(o::ValueTypes, key::Integer) = open_scope() do _
+Base.haskey(o::ValueTypes, key::Integer) = @with_scope begin
     @napi_call napi_has_element(o::NapiValue, key::UInt32)::Bool
 end
-Base.delete!(o::ValueTypes, key::Integer) = open_scope() do _
+Base.delete!(o::ValueTypes, key::Integer) = @with_scope begin
     @napi_call napi_delete_element(o::NapiValue, key::UInt32)::Bool
 end
 

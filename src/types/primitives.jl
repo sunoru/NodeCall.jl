@@ -80,7 +80,7 @@ function value(::Type{String}, v::NapiValue; is_string = false)
         @napi_call napi_get_value_string_utf8(v::NapiValue, buf::Ptr{Cchar}, (len+1)::Csize_t)::Csize_t
         String(buf)
     else
-        open_scope() do _
+        @with_scope begin
             s = to_string(v)
             value(String, s; is_string = true)
         end

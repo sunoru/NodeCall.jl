@@ -136,12 +136,6 @@ using Dates: DateTime, now, Millisecond
         node"const fs = require('fs')"
     end
 
-    @testset "miscs" begin
-        @test read(node_cmd("--version"), String) |> strip == "v14.17.3"
-        @test read(npm_cmd("--version"), String) |> strip == "6.14.13"
-        @test read(npx_cmd("--version"), String) |> strip == "6.14.13"
-    end
-
     @testset "arrays" begin
         a = rand(Float64, 10)
         b = reinterpret(UInt8, a)
@@ -172,5 +166,24 @@ using Dates: DateTime, now, Millisecond
         end
         @test wait(p) == 200
         @test y == 100
+    end
+
+    @testset "internals" begin
+        x = rand()
+        NodeCall.reference(x)
+        ref = NodeCall.reference(x)
+        ref2 = NodeCall.reference(x)
+        @test pointer(ref) == pointer(ref2)
+        NodeCall.dereference(x)
+        NodeCall.dereference(pointer(ref))
+        @test NodeCall.delete_reference(pointer(ref2))
+    end
+
+    @testset "miscs" begin
+        @test read(node("--version"), String) |> strip == "v14.17.3"
+        @test read(npm("--version"), String) |> strip == "6.14.13"
+        @test read(npx("--version"), String) |> strip == "6.14.13"
+        # Explicitly invoke `dispose!` to test it.
+        @test NodeCall.dispose!(NodeCall._GLOBAL_ENV) == 0
     end
 end
