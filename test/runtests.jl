@@ -171,6 +171,10 @@ using Dates: DateTime, now, Millisecond
         @test y == 100
     end
 
+    @testset "async" begin
+        @test wait(@async node"true")
+    end
+
     @testset "internals" begin
         x = rand()
         NodeCall.reference(x)

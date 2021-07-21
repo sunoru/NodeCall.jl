@@ -39,7 +39,7 @@ function _initialize_types()
     _JS_MAKE_PROMISE[] = node"""(promise, resolve, reject) => {
         const p = promise
             .then(resolve).catch(reject)
-        setTimeout(() => undefined, 0)
+        setTimeout(() => {}, 0)
         return p
     }"""o
 end
