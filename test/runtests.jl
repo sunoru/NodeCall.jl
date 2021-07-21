@@ -100,7 +100,10 @@ using Dates: DateTime, now, Millisecond
         for x in f3()
             push!(vs, x)
         end
-        @test all(vs .≈ [1, 2, 3])
+        for x in node"[1,2,3]"o
+            push!(vs, x)
+        end
+        @test all(vs .≈ [1, 2, 3, 1, 2, 3])
         js_sort! = node"(x) => x.sort()"
         a1 = rand(10)
         js_sort!(a1)
@@ -179,11 +182,27 @@ using Dates: DateTime, now, Millisecond
         @test NodeCall.delete_reference(pointer(ref2))
     end
 
+    @testset "contexts" begin
+        ctx1 = current_context()
+        ctx2 = new_context(be_current=false)
+        node"const f_ctx1 = () => true"
+        switch_context(ctx2)
+        node"const f_ctx2 = () => 1"
+        @test node"f_ctx2()" == 1
+        @test_throws NodeError node"f_ctx1()"
+        list_contexts() == [ctx1, ctx2]
+        switch_context(1)
+        @test node"f_ctx1()"
+        @test_logs (:warn,"Deleting currently activated context.") delete_context(ctx1)
+        @test_throws NodeError node"f_ctx1()"
+        @test node"f_ctx2()" == 1
+    end
+
     @testset "miscs" begin
         @test read(node("--version"), String) |> strip == "v14.17.3"
         @test read(npm("--version"), String) |> strip == "6.14.13"
         @test read(npx("--version"), String) |> strip == "6.14.13"
         # Explicitly invoke `dispose!` to test it.
-        @test NodeCall.dispose!(NodeCall._GLOBAL_ENV) == 0
+        NodeCall.dispose!(NodeCall._GLOBAL_ENV)
     end
 end

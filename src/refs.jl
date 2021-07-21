@@ -16,7 +16,12 @@ const ReferenceCache = Dict{Ptr{Cvoid}, ReferenceEntry}()
 get_reference(id::Union{UInt64, Ptr}) = get(ReferenceCache, Ptr{Cvoid}(id), nothing)
 
 delete_reference(id::Union{UInt64, Ptr}) = let ref = pop!(ReferenceCache, Ptr{Cvoid}(id), nothing)
-    !isnothing(ref) && delete!(ObjectReference, ref[])
+    if isnothing(ref)
+        false
+    else
+        delete!(ObjectReference, ref[])
+        true
+    end
 end
 
 function make_reference(object::T) where T

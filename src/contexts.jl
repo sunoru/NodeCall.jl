@@ -8,9 +8,28 @@ end
 
 function _initialize_context()
     _VM[] = node"require('vm')"o
-    _ASSIGN_DEFAULTS[] = node"""(ctx) => Object.assign({
-        console, require
-    }, ctx)"""o
+    _ASSIGN_DEFAULTS[] = node"""(() => {
+        const keys = []
+        // Pass global functions
+        for (const key of Object.keys(globalThis)) {
+            if (key !== 'global' && !key.startsWith('_')) {
+                keys.push(key)
+            }
+        }
+        // Pass all the types (the global objects whose names start with a capital letter)
+        for (const key of Object.getOwnPropertyNames(globalThis)) {
+            if (key[0] === key[0].toUpperCase() && !key.startsWith('_')) {
+                keys.push(key)
+            }
+        }
+        return (ctx) => {
+            const defaults = new Object()
+            for (const key of keys) {
+                defaults[key] = globalThis[key]
+            }
+            return Object.assign(defaults, ctx)
+        }
+    })()"""o
     new_context()
 end
 
@@ -23,6 +42,15 @@ function switch_context(index::Integer)
     context = get_context(index)
     _GLOBAL_ENV.context_index = index
     context
+end
+function switch_context(context)
+    for i in 1:length(NodeContexts)
+        if NodeContexts[i] == context
+            return switch_context(i)
+        end
+    end
+    push!(NodeContexts, context)
+    switch_context(length(NodeContexts))
 end
 
 new_context(context_object=nothing; add_defaults=true, be_current=true) = @with_scope begin
@@ -63,6 +91,4 @@ function delete_context(context)
     false
 end
 
-function context_list()
-
-end
+list_contexts() = copy(NodeContexts)

@@ -64,6 +64,9 @@ function initialize!(env, addon_path, args)
 end
 
 function dispose!(env)
+    if !initialized()
+        return
+    end
     @debug "Disposing NodeJS..."
     _INITIALIZED[] = false
     ret = @ccall :libjlnode.dispose()::Cint

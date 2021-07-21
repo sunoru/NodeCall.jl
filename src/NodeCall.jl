@@ -12,7 +12,7 @@ include("utils.jl")
 export run_script, @node_str, require
 include("eval.jl")
 
-export NapiValue, NodeValue, JsValue,
+export NapiValue, NodeValue, JsValue, NodeError,
        NodeValueTemp, NodeObject, NodeExternal,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
        JsObject, JsFunction, JsPromise
@@ -29,7 +29,7 @@ include("types/functions.jl")
 include("types/external.jl")
 include("types/promises.jl")
 
-export current_context, new_context, delete_context, switch_context
+export current_context, new_context, delete_context, switch_context, list_contexts
 include("contexts.jl")
 
 export node_env, node_uvloop
