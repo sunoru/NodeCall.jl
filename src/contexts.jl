@@ -9,7 +9,7 @@ end
 function _initialize_context()
     _VM[] = node"require('vm')"o
     _ASSIGN_DEFAULTS[] = node"""(() => {
-        const keys = []
+        const keys = ['console']
         // Pass global functions
         for (const key of Object.keys(globalThis)) {
             if (key !== 'global' && !key.startsWith('_')) {

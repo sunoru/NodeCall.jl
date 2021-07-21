@@ -44,18 +44,18 @@ create_object(
     nv
 end
 
-function create_object_dict(x)
+function create_object_dict(x::AbstractDict{String})
     t = @napi_call create_object_dict(
         pointer_from_objref(x)::Ptr{Cvoid}
     )::NapiValue
     f = run_script(raw"""(dict) => new Proxy(dict, {
-        get: (target, prop) => {
+        get: function (target, prop) {
             if (prop === '__jl_type' || prop === '__jl_ptr') {
                 return Reflect.get(this, prop)
             }
             return target.__get__(prop)
         },
-        set: (target, prop, value) => {
+        set: function (target, prop, value) {
             if (prop === '__jl_type' || prop === '__jl_ptr') {
                 Object.defineProperty(this, prop, {value})
                 return
@@ -63,10 +63,33 @@ function create_object_dict(x)
             target.__set__(prop, value)
         },
         has: (target, prop) => target.__has__(prop),
-        ownKeys: (target) => target.__keys__()
-            .concat(["__get__", "__set__", "__has__", "__keys__"])
+        ownKeys: (target) => {
+            const keys = ["__get__", "__set__", "__has__", "__keys__"]
+            for (const key of target.__keys__()) {
+                keys.push(key.toString())
+            }
+            return keys
+        },
+        getOwnPropertyDescriptor: function (target, prop) {
+            if (["__get__", "__set__", "__has__", "__keys__"].includes(prop)) {
+                return Object.getOwnPropertyDescriptor(target, prop)
+            }
+            return {
+                get: () => this.get(target, prop),
+                set: () => this.set(target, prop),
+                enumerable: true,
+                configurable: true
+            }
+        }
     })"""; raw=true)
     f(t; raw=true)
+end
+function create_object_dict(x::AbstractDict)
+    m = run_script("new Map()", raw=true)
+    for (k, v) in x
+        m.set(k, v)
+    end
+    m
 end
 create_object_tuple(x) = _napi_value(collect(x))
 create_object_mutable(x) = @napi_call create_object_mutable(
@@ -92,13 +115,7 @@ const _JLTYPE_PROPERTY = "__jl_type"
 const _JLPTR_PROPERTY = "__jl_ptr"
 function napi_value(v::T; vtype = nothing) where T
     mut = ismutable(v)
-    ptr = nothing
-    if mut
-        ptr = pointer_from_objref(v)
-        nv = get_reference(ptr)
-        isnothing(nv) || return NapiValue(nv[])
-    end
-    nv = if vtype ≡ :dict
+    nv = if vtype ≡ :strdict || vtype ≡ :dict
         create_object_dict(v)
     elseif vtype ≡ :tuple
         create_object_tuple(v)
@@ -113,6 +130,7 @@ function napi_value(v::T; vtype = nothing) where T
     end
     nv
 end
+napi_value(d::AbstractDict{String}) = napi_value(d, vtype = :strdict)
 napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
 napi_value(t::Tuple) = napi_value(t, vtype = :tuple)
 
@@ -127,7 +145,9 @@ _get_cached(v::NapiValue) = @with_scope begin
     get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
     T = value(NodeExternal, jltype_external)::DataType
     isnothing(T) && return nothing
-    if T.mutable
+    if T <: AbstractDict && !(T <: AbstractDict{String})
+        return value(T, v)
+    elseif T.mutable
         jlobject_external = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
         get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
         value(NodeExternal(jlobject_external))
@@ -166,9 +186,15 @@ function object_value(v::NapiValue)
     end
 end
 
-value(::Type{T}, v::NapiValue) where T <: AbstractDict = T(value(Dict, v))
+value(::Type{T}, v::NapiValue) where T <: AbstractDict = let dict = value(Dict, v)
+    try return T(dict) catch end
+    dict
+end
 value(::Type{Dict}, v::NapiValue) = @with_scope is_map(v) ? make_dict(v) : Dict(key => v[key] for key in keys(v))
-value(::Type{T}, v::NapiValue) where T <: AbstractSet = T(value(Set, v))
+value(::Type{T}, v::NapiValue) where T <: AbstractSet = let set = value(Set, v)
+    try return T(set) catch end
+    set
+end
 value(::Type{Set}, v::NapiValue) = @with_scope is_set(v) ? make_set(v) : Set(keys(v))
 Base.Dict(v::ValueTypes) = value(Dict, v)
 Base.Set(v::ValueTypes) = value(Set, v)

@@ -108,7 +108,7 @@ using Dates: DateTime, now, Millisecond
         a1 = rand(10)
         js_sort!(a1)
         @test issorted(a1)
-        # Dictionary: only support String as key type.
+        # Dictionary: only support String as key type to be mutated.
         dict = Dict("1"=>2, "3"=>4, "x"=>5)
         dict2 = node"""(d) => {
             d[1] = 5
@@ -118,6 +118,12 @@ using Dates: DateTime, now, Millisecond
         }"""(dict)
         @test dict == Dict("1"=>5, "3"=>6, "x"=>7)
         @test dict === dict2
+        # Other dictionaries will be converted into a `Map`
+        dict3 = Dict(1=>2, 4=>4)
+        @test node"""(map) => {
+            map.set(2, 3)
+            return map
+        }"""(dict3) == Dict(1=>2, 2=>3, 4=>4)
         struct Foo
             x::Int
         end
@@ -157,7 +163,7 @@ using Dates: DateTime, now, Millisecond
         )"""
         t = now()
         p = js_sleep(500)
-        @test wait(p) == 500
+        @test fetch(p) == 500
         @test now() - t ≥ Millisecond(500)
         async_f = node"""async (x) => {
             return x * 2
@@ -167,12 +173,8 @@ using Dates: DateTime, now, Millisecond
             y = x
             x * 2
         end
-        @test wait(p) == 200
+        @test fetch(p) == 200
         @test y == 100
-    end
-
-    @testset "async" begin
-        @test wait(@async node"true")
     end
 
     @testset "internals" begin

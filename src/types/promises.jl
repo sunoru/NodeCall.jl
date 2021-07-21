@@ -1,6 +1,3 @@
-# using Base.Threads: Condition
-
-
 struct JsPromise <: JsObjectType
     ref::NodeObject
 end
@@ -38,7 +35,7 @@ function promise_state(
 end
 
 const _JS_MAKE_PROMISE = Ref{NodeObject}()
-Base.wait(
+Base.fetch(
     promise::ValueTypes;
     raw=false, convert_result=true
 ) = with_result(raw, convert_result) do
@@ -65,9 +62,12 @@ Base.wait(
     while isnothing(success[])
         run_script_uvloop(UV_RUN_ONCE)
     end
+
     if success[]
         result[]
     else
         throw(result[])
     end
 end
+
+Base.wait(promise::ValueTypes) = (fetch(promise); nothing)
