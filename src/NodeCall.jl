@@ -19,8 +19,11 @@ export NapiValue, NodeValue, JsValue, NodeError,
 export napi_value, node_value, value
 export create_object
 export set!, instanceof
+export @await
+export node_throw
 include("types/bases.jl")
 include("types/node_value.jl")
+include("types/errors.jl")
 include("types/common.jl")
 include("types/primitives.jl")
 include("types/objects.jl")

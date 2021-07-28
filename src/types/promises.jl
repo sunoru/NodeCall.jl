@@ -71,3 +71,7 @@ Base.fetch(
 end
 
 Base.wait(promise::ValueTypes) = (fetch(promise); nothing)
+
+macro await(expr)
+    esc(:(fetch($expr)))
+end

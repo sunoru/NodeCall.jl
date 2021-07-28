@@ -47,16 +47,19 @@ function call_function(func_ptr::Ptr{Cvoid}, args_ptr::Ptr{Cvoid}, argc::Csize_t
     func = get_reference(func_ptr)
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
-    NapiValue(func[](args...))
+    try
+        NapiValue(func[](args...))
+    catch e
+        node_throw(e)
+        nothing
+    end
 end
-
-function_finalizer(func_ptr) = dereference(func_ptr)
 
 function napi_value(f::Function; name=nothing)
     func_ptr = pointer(reference(f))
     name = isnothing(name) ? C_NULL : name
     nv = @napi_call create_function(func_ptr::Ptr{Cvoid}, name::Cstring)::NapiValue
-    add_finalizer!(nv, function_finalizer, func_ptr)
+    add_finalizer!(nv, dereference, func_ptr)
     nv
 end
 

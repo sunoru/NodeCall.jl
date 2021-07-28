@@ -43,13 +43,8 @@ end
 NodeObject(value::NapiValue) = NodeObject(
     @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
 )
-
-struct NodeError <: NodeValue
-    o::NodeObject
-end
-NodeError(value::NapiValue) = NodeError(NodeObject(value))
-
 NodeValue(v) = node_value(v)
+
 Base.convert(::Type{NodeValue}, v::T) where T = NodeValue(v)
 Base.convert(::Type{NodeValue}, v::T) where T <: NodeValue = v
 Base.convert(::Type{Union{Nothing, NodeValue}}, v::T) where T <: NodeValue = v
@@ -70,7 +65,6 @@ node_value(v) = node_value(NapiValue(v))
 
 Base.show(io::IO, v::NodeValueTemp) = print(io, string("NodeValueTemp: ", getfield(v, :tempname)))
 Base.show(io::IO, v::NodeObject) = print(io, string("NodeObject: ", getfield(v, :ref)))
-Base.show(io::IO, v::NodeError) = print(io, v.message)
 
 napi_value(temp::NodeValueTemp) = @napi_call napi_get_named_property(
     get_tempvar()::NapiValue,
@@ -79,4 +73,3 @@ napi_value(temp::NodeValueTemp) = @napi_call napi_get_named_property(
 napi_value(node_object::NodeObject) = @napi_call napi_get_reference_value(
     getfield(node_object, :ref)::NapiRef
 )::NapiValue
-napi_value(node_error::NodeError) = napi_value(getfield(node_error, :o))
