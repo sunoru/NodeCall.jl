@@ -22,7 +22,7 @@ initialized() = _INITIALIZED[]
 end
 # It has to been called manually for now.
 # HELP WANTED: https://github.com/sunoru/NodeCall.jl/issues/1
-function run_script_uvloop(mode::UvRunMode=UV_RUN_ONCE)
+function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     node_loop = node_uvloop()
     @ccall :libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
     # @async begin
@@ -58,12 +58,12 @@ function initialize!(env, addon_path, args)
     _initialize_context()
     Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true
-    # run_script_uvloop()
+    # run_node_uvloop()
     @debug "NodeJS initialized."
     env
 end
 
-function dispose!(env)
+function dispose!(_env)
     if !initialized()
         return
     end
@@ -74,14 +74,13 @@ function dispose!(env)
     @debug "NodeJS disposed."
 end
 
-function restart_node(args=split(get(ENV, "JLNODE_ARGS", "")))
-    if initialized()
-        dispose!(_GLOBAL_ENV)
-    end
+function start_node(args=split(get(ENV, "JLNODE_ARGS", "")))
     initialize!(_GLOBAL_ENV, jlnode_addon, args)
 end
 
 function __init__()
-    restart_node()
+    if get(ENV, "JLNODE_AUTOSTART", "1") == "1"
+        start_node()
+    end
     finalizer(dispose!, _GLOBAL_ENV)
 end

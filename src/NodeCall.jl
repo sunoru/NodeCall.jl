@@ -32,7 +32,7 @@ include("types/promises.jl")
 export current_context, new_context, delete_context, switch_context, list_contexts
 include("contexts.jl")
 
-export node_env, node_uvloop
+export node_env, node_uvloop, run_node_uvloop
 include("env.jl")
 
 export node, npm, npx

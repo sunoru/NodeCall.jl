@@ -60,7 +60,7 @@ Base.fetch(
     # wait(cond)
 
     while isnothing(success[])
-        run_script_uvloop(UV_RUN_ONCE)
+        run_node_uvloop(UV_RUN_ONCE)
     end
 
     if success[]

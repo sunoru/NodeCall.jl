@@ -45,9 +45,11 @@ create_object(
 end
 
 function create_object_dict(x::AbstractDict{String})
+    ref = reference(x)
     t = @napi_call create_object_dict(
-        pointer_from_objref(x)::Ptr{Cvoid}
+        pointer(ref)::Ptr{Cvoid}
     )::NapiValue
+    add_finalizer!(t, dereference, x)
     f = run_script(raw"""(dict) => new Proxy(dict, {
         get: function (target, prop) {
             if (prop === '__jl_type' || prop === '__jl_ptr') {
