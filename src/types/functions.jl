@@ -2,7 +2,9 @@ struct JsFunction{T <: Union{Nothing, NodeValue}} <: JsObjectType
     ref::NodeObject
     this::T
 end
-value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(NodeObject(v), node_value(this))
+value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
+    NodeObject(v), isnothing(this) ? nothing : node_value(this)
+)
 
 (func::ValueTypes)(
     args...;
