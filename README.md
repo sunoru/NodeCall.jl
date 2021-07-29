@@ -1,8 +1,9 @@
 # NodeCall.jl
 
-Call NodeJS from Julia.
+[![CI Test](https://github.com/sunoru/NodeCall.jl/actions/workflows/build.yml/badge.svg)](https://github.com/sunoru/NodeCall.jl/actions/workflows/build.yml)
 
-WIP.
+
+Call NodeJS from Julia.
 
 ## Dependency
 
@@ -10,19 +11,18 @@ WIP.
 
 ## Usage
 
+```
+```
+
 ## Examples
 See [`test/runtests.jl`](./test/runtests.jl) for examples.
 
-## TODO
+## Bug Reports & Contributing
 
-- Avoid creating arraybuffer for same Julia array more than once.
-- Pack `libjlnode_jll.jl` by compiling [`jlnode`](https://github.com/sunoru/jlnode).
-- Add CI.
-- Implement interface for asynchronous functions as well as generators.
-- Make use of multiple threads/processes (worker threads in node).
-- Clean possibly messy code.
-- More utility functions (such as executing npm, running with multiple contexts).
+Please feel free to file issues and pull requests. Any feedback or help would be greatly appriciated.
 
-## LICENSE
+To contribute, you can firstly have a look at the [TODO list](https://github.com/sunoru/NodeCall.jl/issues/3).
+
+## License
 
 [MIT License](./LICENSE.md)

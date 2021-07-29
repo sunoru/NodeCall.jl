@@ -41,7 +41,7 @@ function reference(id::Union{UInt64, Ptr})
     isnothing(entry) && return nothing
     ReferenceCache[ptr] = ReferenceEntry(entry.ref, entry.count + 1)
 end
-dereference(object::T) where T = haskey(ObjectReference, object) ? dereference(
+dereference(object::T) where T = initialized() && haskey(ObjectReference, object) ? dereference(
     pointer_from_objref(T.mutable ? object : ObjectReference[object])
 ) : nothing
 function dereference(id::Union{UInt64, Ptr})

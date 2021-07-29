@@ -1,5 +1,33 @@
-struct JsPromise <: JsObjectType
+@enum PromiseState begin
+    promise_pending = 0
+    promise_fulfilled
+    promise_rejected
+end
+
+mutable struct JsPromise <: JsObjectType
     ref::NodeObject
+    state::PromiseState
+    result::Any
+end
+JsPromise(ref::NodeObject) = @with_scope begin
+    promise = JsPromise(ref, promise_pending, nothing)
+    state, result = promise_state(promise)
+    setfield!(promise, :state, state)
+    setfield!(promise, :result, result)
+    if state == promise_rejected
+        _JS_MAKE_PROMISE[](promise, _ -> nothing, _ -> nothing; raw=true)
+    elseif state == promise_pending
+        resolve = (x) -> begin
+            setfield!(promise, :state, promise_fulfilled)
+            setfield!(promise, :result, x);
+        end
+        reject = (x) -> begin
+            setfield!(promise, :state, promise_rejected)
+            setfield!(promise, :result, x);
+        end
+        _JS_MAKE_PROMISE[](promise, resolve, reject; raw=true)
+    end
+    promise
 end
 
 promise_resolve(deferred) = (x) -> @with_scope begin
@@ -13,16 +41,17 @@ JsPromise(f::Function) = @with_scope begin
     nv = Ref{NapiValue}()
     deferred = @napi_call napi_create_promise(nv::Ptr{NapiValue})::NapiDeferred
     @async f((promise_resolve(deferred), promise_reject(deferred)))
-    Promise(NodeObject(nv))
+    JsPromise(NodeObject(nv))
 end
 
+napi_value(promise::JsPromise) = convert(NapiValue, getfield(promise, :ref))
 value(::Type{JsPromise}, v::NapiValue) = @with_scope JsPromise(NodeObject(v))
 
-@enum PromiseState begin
-    promise_pending = 0
-    promise_fulfilled
-    promise_rejected
-end
+state(promise::JsPromise) = getfield(promise, :state)
+result(promise::JsPromise) = getfield(promise, :result)
+state(promise::ValueTypes) = promise_state(promise)[1]
+result(promise::ValueTypes) = promise_state(promise)[2]
+
 function promise_state(
     promise::ValueTypes;
     raw=false, convert_result=true
@@ -41,32 +70,17 @@ Base.fetch(
 ) = with_result(raw, convert_result) do
     nv = NapiValue(promise)
     is_promise(nv) || return nv
-    # cond = Condition()
-    # resolve = (x...) -> notify(cond, x)
-    # reject = (x...) -> notify(cond, x; error=true)
+    promise = value(JsPromise, nv)
 
-    state, result = promise_state(promise)
-    if state == promise_fulfilled
-        return result
-    elseif state == promise_rejected
-        throw(result)
-    end
-    success = Ref{Union{Nothing, Bool}}(nothing)
-    result = Ref{Any}(nothing)
-    resolve = (x) -> (success[] = true; result[] = x)
-    reject = (x) -> (success[] = false; result[] = x)
-
-    _JS_MAKE_PROMISE[](nv, resolve, reject)
-    # wait(cond)
-
-    while isnothing(success[])
+    s = state(promise)
+    while s == promise_pending
         run_node_uvloop(UV_RUN_ONCE)
+        s = state(promise)
     end
-
-    if success[]
-        result[]
-    else
-        throw(result[])
+    if s == promise_fulfilled
+        return result(promise)
+    elseif s == promise_rejected
+        throw(result(promise))
     end
 end
 

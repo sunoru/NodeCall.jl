@@ -54,20 +54,20 @@ function value(napi_value::NapiValue; this=nothing)
 end
 
 # For being called in C++ code.
-napi_value_from_value(v) = napi_value(v)
-napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
-jlnode_setindex!(o, v, k) = try
+@noinline napi_value_from_value(v) = napi_value(v)
+@noinline napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
+@noinline jlnode_setindex!(o, v, k) = try
     setindex!(o, v, k)
     v
 catch
     nothing
 end
-jlnode_getproperty(o, k) = try
+@noinline jlnode_getproperty(o, k) = try
     getproperty(o, Symbol(k))
 catch
     nothing
 end
-jlnode_setproperty!(o, k, v) = try
+@noinline jlnode_setproperty!(o, k, v) = try
     setproperty!(o, Symbol(k), v)
 catch
     nothing

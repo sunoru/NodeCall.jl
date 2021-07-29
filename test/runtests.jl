@@ -165,6 +165,7 @@ using Dates: DateTime, now, Millisecond
         p = js_sleep(500)
         @test fetch(p) == 500
         @test now() - t ≥ Millisecond(500)
+        @test state(napi_value(p)) == NodeCall.promise_fulfilled
         async_f = node"""async (x) => {
             return x * 2
         }"""
@@ -173,8 +174,14 @@ using Dates: DateTime, now, Millisecond
             y = x
             x * 2
         end
-        @test fetch(p) == 200
+        @test 200 == @await(p)
         @test y == 100
+    end
+
+    @testset "errors" begin
+        @test_throws NodeError node"throw('error')"
+        p = node"(async () => { throw('async error') })()"
+        @test_throws String wait(p)
     end
 
     @testset "internals" begin
