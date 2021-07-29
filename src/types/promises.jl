@@ -80,7 +80,11 @@ Base.fetch(
     if s == promise_fulfilled
         return result(promise)
     elseif s == promise_rejected
-        throw(result(promise))
+        err = result(promise)
+        if err isa JsObject
+            err = NodeError(node_value(err))
+        end
+        throw(err)
     end
 end
 

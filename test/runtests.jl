@@ -77,6 +77,14 @@ using Dates: DateTime, now, Millisecond
         d.b = node"b"o
         d.c = c
         @test node"d.b === b && d.c === c"
+        node"""class A {
+            constructor(a, b) {
+                this.c = a * b
+            }
+        }"""
+        class_a = node"A"
+        instance = @new class_a(4, 5)
+        @test instance.c == 20
     end
 
     @testset "functions" begin

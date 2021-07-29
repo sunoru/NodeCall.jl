@@ -23,7 +23,7 @@ create_object(
     raw=false, convert_result=true
 ) = with_result(raw, convert_result) do
     argv = isnothing(args) ? C_NULL : NapiValue.(collect(args))
-    argc = length(argv)
+    argc = isnothing(args) ? 0 : length(args)
     if isnothing(constructor)
         @napi_call napi_create_object()::NapiValue
     else
@@ -240,4 +240,14 @@ function object_finalizer(f_ptr, data_ptr)
     f = value(dereference(f_ptr))
     data = dereference(data_ptr)
     f(value(data))
+end
+
+macro new(expr)
+    constructor, args = if expr isa Symbol
+        expr, NapiValue[]
+    else
+        @assert expr isa Expr && expr.head == :call
+        expr.args[1], expr.args[2:end]
+    end
+    esc(:(create_object($constructor, $args)))
 end

@@ -17,7 +17,7 @@ export NapiValue, NodeValue, JsValue, NodeError,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
        JsObject, JsFunction, JsPromise
 export napi_value, node_value, value
-export create_object
+export create_object, @new
 export set!, instanceof
 export @await, state, result
 export node_throw
