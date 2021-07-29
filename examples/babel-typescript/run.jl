@@ -1,9 +1,10 @@
 using NodeCall
 
+# Install babel to transpile TypeScript.
 run(npm("install", "@babel/core", "@babel/preset-typescript"))
-
 const babel = require("@babel/core")
 
+# Run scripts in TS.
 function run_ts(ts_script)
     options = node"""{
         filename: "file.ts",
@@ -17,16 +18,18 @@ run_ts("""
 interface Box<T> {
     contents: T
 }
-type StrBox = Box<string>
-const box1: Box<number> = { contents: 20070128 }
-const box2: StrBox = { contents: "Hello, world!" }
-const print1 = (box: Box<number>): void => {
-    console.log("Number box: ", box)
+class BoxClass<T> implements Box<T> {
+    public constructor(
+        public contents: T
+    ) { }
+    public print(): void {
+        console.log("this.contents =", this.contents)
+    }
 }
-const print2 = (box: StrBox): void => {
-    console.log("String box: ", box)
-}""")
-print1, print2, box1, box2 = node"[print1, print2, box1, box2]"
+const box1: BoxClass<number> = new BoxClass(20070128)
+const box2: Box<string> = new BoxClass("Hello, world!")
+""")
+box1, box2 = node"[box1, box2]"
 
-print1(box1)
-print2(box2)
+@show box1.contents
+box2.print()
