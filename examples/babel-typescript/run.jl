@@ -25,7 +25,8 @@ const print1 = (box: Box<number>): void => {
 }
 const print2 = (box: StrBox): void => {
     console.log("String box: ", box)
-}
+}""")
+print1, print2, box1, box2 = node"[print1, print2, box1, box2]"
+
 print1(box1)
 print2(box2)
-""")

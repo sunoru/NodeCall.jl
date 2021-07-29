@@ -13,7 +13,11 @@ macro wrap_get_env(name)
     @eval $func_name() = @napi_call $napi_name()::NapiValue
 end
 
-@wrap_get_env("global")
+get_global(context=current_context()) = if isnothing(context)
+    @napi_call napi_get_global()::NapiValue
+else
+    run_script("globalThis", context=context, raw=true)
+end
 @wrap_get_env undefined
 @wrap_get_env null
 

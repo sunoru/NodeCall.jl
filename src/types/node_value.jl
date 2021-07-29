@@ -2,10 +2,27 @@ import UUIDs: uuid4
 
 const tempvar_name = "__jlnode_tmp"
 
-get_tempvar(tempname = nothing) = @with_scope begin
-    temp = get(get_global(), tempvar_name; convert_result=false)
+get_tempvar(tempname=nothing) = @with_scope begin
+    temp = get(get_global(nothing), tempvar_name; convert_result=false)
     isnothing(tempname) ? temp : temp[tempname]
 end
+
+mutable struct NodeObject <: NodeValue
+    ref::NapiRef
+    function NodeObject(napi_ref::NapiRef)
+        ref = new(napi_ref)
+        finalizer(ref) do r
+            if initialized()
+                @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
+            end
+        end
+        ref
+    end
+end
+
+NodeObject(value::NapiValue) = NodeObject(
+    @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
+)
 
 mutable struct NodeValueTemp <: NodeValue
     tempname::String
@@ -26,25 +43,7 @@ NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
     NodeValueTemp(tempname)
 end
 
-
-mutable struct NodeObject <: NodeValue
-    ref::NapiRef
-    function NodeObject(napi_ref::NapiRef)
-        ref = new(napi_ref)
-        finalizer(ref) do r
-            if initialized()
-                @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
-            end
-        end
-        ref
-    end
-end
-
-NodeObject(value::NapiValue) = NodeObject(
-    @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
-)
-NodeValue(v) = node_value(v)
-
+NodeValue(v; kwargs...) = node_value(v; kwargs...)
 Base.convert(::Type{NodeValue}, v::T) where T = NodeValue(v)
 Base.convert(::Type{NodeValue}, v::T) where T <: NodeValue = v
 Base.convert(::Type{Union{Nothing, NodeValue}}, v::T) where T <: NodeValue = v
