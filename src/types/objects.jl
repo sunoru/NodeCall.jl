@@ -8,8 +8,6 @@ struct JsIterator <: JsObjectType
     ref::NodeObject
 end
 
-# FIXME:
-# `define_properties!` leads to ReadOnlyMemoryError()
 function define_properties!(nv::NapiValue, properties::AbstractArray{NapiPropertyDescriptor})
     @napi_call napi_define_properties(
         nv::NapiValue,
@@ -18,6 +16,7 @@ function define_properties!(nv::NapiValue, properties::AbstractArray{NapiPropert
     )
     nv
 end
+
 create_object(
     constructor=nothing, args=nothing;
     raw=false, convert_result=true
@@ -44,36 +43,31 @@ create_object(
     nv
 end
 
-function create_object_dict(x::AbstractDict{String})
-    ref = reference(x)
-    t = @napi_call create_object_dict(
-        pointer(ref)::Ptr{Cvoid}
-    )::NapiValue
-    add_finalizer!(t, dereference, x)
-    f = run_script(raw"""(dict) => new Proxy(dict, {
+@global_js_const _JS_DICT_PROXY = raw"""(() => {
+    const preserved_keys = [
+        "__get__", "__set__", "__has__", "__keys__",
+        "__jl_type", "__jl_ptr"
+    ]
+    return (dict) => new Proxy(dict, {
         get: function (target, prop) {
-            if (prop === '__jl_type' || prop === '__jl_ptr') {
-                return Reflect.get(this, prop)
+            if (prop === "__jl_type" || prop === "__jl_ptr") {
+                return Reflect.get(target, prop)
             }
             return target.__get__(prop)
         },
-        set: function (target, prop, value) {
-            if (prop === '__jl_type' || prop === '__jl_ptr') {
-                Object.defineProperty(this, prop, {value})
-                return
-            }
+        set: (target, prop, value) => {
             target.__set__(prop, value)
         },
         has: (target, prop) => target.__has__(prop),
         ownKeys: (target) => {
-            const keys = ["__get__", "__set__", "__has__", "__keys__"]
+            const keys = [...preserved_keys]
             for (const key of target.__keys__()) {
                 keys.push(key.toString())
             }
             return keys
         },
         getOwnPropertyDescriptor: function (target, prop) {
-            if (["__get__", "__set__", "__has__", "__keys__"].includes(prop)) {
+            if (preserved_keys.includes(prop)) {
                 return Object.getOwnPropertyDescriptor(target, prop)
             }
             return {
@@ -83,8 +77,15 @@ function create_object_dict(x::AbstractDict{String})
                 configurable: true
             }
         }
-    })"""; raw=true)
-    f(t; raw=true)
+    })
+})()"""
+function create_object_dict(x::AbstractDict{String})
+    ref = reference(x)
+    t = @napi_call create_object_dict(
+        pointer(ref)::Ptr{Cvoid}
+    )::NapiValue
+    add_finalizer!(t, dereference, x)
+    _JS_DICT_PROXY(t; raw=true)
 end
 function create_object_dict(x::AbstractDict)
     m = run_script("new Map()", raw=true)
@@ -105,11 +106,11 @@ function create_object_immutable(x::T) where T
     nv
 end
 
-# function add_jltype(::Type{T}) where T
-function add_jltype!(nv, ::Type{T}) where T
-    nv[_JLTYPE_PROPERTY] = NodeExternal(T)
-    nv
-end
+add_jltype(::Type{T}) where T = NapiPropertyDescriptor(
+    utf8name=pointer(_JLTYPE_PROPERTY),
+    value=NodeExternal(T),
+    attributes=NapiTypes.napi_default
+)
 
 napi_value(js_object::JsObjectType) = convert(NapiValue, getfield(js_object, :ref))
 napi_value(v::DateTime) = @napi_call napi_create_date((datetime2unix(v) * 1000)::Cdouble)::NapiValue
@@ -126,10 +127,15 @@ function napi_value(v::T; vtype = nothing) where T
     else
         create_object_immutable(v)
     end
-    add_jltype!(nv, T)
+    ps = [add_jltype(T)]
     if mut
-        nv[_JLPTR_PROPERTY] = NodeExternal(v)
+        push!(ps, NapiPropertyDescriptor(
+            utf8name=pointer(_JLPTR_PROPERTY),
+            value=NodeExternal(v),
+            attributes=NapiTypes.napi_default
+        ))
     end
+    define_properties!(nv, ps)
     nv
 end
 napi_value(d::AbstractDict{String}) = napi_value(d, vtype = :strdict)
@@ -201,8 +207,7 @@ value(::Type{Set}, v::NapiValue) = @with_scope is_set(v) ? make_set(v) : Set(key
 Base.Dict(v::ValueTypes) = value(Dict, v)
 Base.Set(v::ValueTypes) = value(Set, v)
 
-function make_dict(v::NapiValue)
-    ks, vs = node"""(v) => {
+@global_js_const _MAKE_DICT = """(v) => {
     assert(v instanceof Map || v instanceof WeakMap)
     const ks = []
     const vs = []
@@ -211,19 +216,22 @@ function make_dict(v::NapiValue)
         vs.push(x[1])
     }
     return [ks, vs]
-    }"""(v)
+}"""
+function make_dict(v::NapiValue)
+    ks, vs = _MAKE_DICT(v)
     Dict(zip(ks, vs))
 end
 
-function make_set(v::NapiValue)
-    vs = node"""(v) => {
+@global_js_const _MAKE_SET = """(v) => {
     assert(v instanceof Set || v instanceof WeakSet)
     const vs = []
     for (const x of v) {
         vs.push(x)
     }
     return vs
-    }"""(v)
+}"""
+function make_set(v::NapiValue)
+    vs = _MAKE_SET(v)
     Set(vs)
 end
 
@@ -247,7 +255,7 @@ macro new(expr)
         expr, NapiValue[]
     else
         @assert expr isa Expr && expr.head == :call
-        expr.args[1], expr.args[2:end]
+        expr.args[1], Expr(:tuple, expr.args[2:end]...)
     end
     esc(:(create_object($constructor, $args)))
 end

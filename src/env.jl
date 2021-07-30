@@ -55,7 +55,7 @@ function initialize!(env, addon_path, args)
         globalThis.assert = require('assert').strict
     })()""", raw=true, context=nothing)
     _initialize_types()
-    _initialize_context()
+    new_context()
     Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true
     # run_node_uvloop()

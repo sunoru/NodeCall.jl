@@ -9,14 +9,9 @@ end
 
 mutable struct NodeObject <: NodeValue
     ref::NapiRef
-    function NodeObject(napi_ref::NapiRef)
-        ref = new(napi_ref)
-        finalizer(ref) do r
-            if initialized()
-                @napi_call napi_delete_reference(getfield(r, :ref)::NapiRef)
-            end
-        end
-        ref
+    function NodeObject(napi_ref::NapiRef=NapiRef(C_NULL))
+        nv = new(napi_ref)
+        finalizer(node_value_finalizer, nv)
     end
 end
 
@@ -26,13 +21,9 @@ NodeObject(value::NapiValue) = NodeObject(
 
 mutable struct NodeValueTemp <: NodeValue
     tempname::String
-    function NodeValueTemp(tempname::AbstractString)
+    function NodeValueTemp(tempname::AbstractString="")
         nv = new(tempname)
-        finalizer(nv) do v
-            if initialized()
-                @with_scope delete!(get_tempvar(), getfield(v, :tempname))
-            end
-        end
+        finalizer(node_value_finalizer, nv)
     end
 end
 
@@ -41,6 +32,19 @@ NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
     tempvar = get_tempvar()
     tempvar[tempname] = v
     NodeValueTemp(tempname)
+end
+
+node_value_finalizer(v::NodeObject) = if initialized()
+    ref = getfield(v, :ref)
+    if ref != C_NULL
+        @napi_call napi_delete_reference(ref::NapiRef)
+    end
+end
+node_value_finalizer(v::NodeValueTemp) = if initialized()
+    t = getfield(v, :tempname)
+    if t != ""
+        delete!(get_tempvar(), t)
+    end
 end
 
 NodeValue(v; kwargs...) = node_value(v; kwargs...)

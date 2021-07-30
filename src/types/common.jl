@@ -25,24 +25,12 @@ end
 @wrap_is_type dataview
 @wrap_is_type promise
 
-const _JS_MAP = Ref{NodeObject}()
-is_map(v::NapiValue) = instanceof(v, _JS_MAP[])
-const _JS_SET = Ref{NodeObject}()
-is_set(v::NapiValue) = instanceof(v, _JS_SET[])
-const _JS_ITERATOR_SYMBOL = Ref{NodeValueTemp}()
-is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL[], nothing; raw=true))
-
-function _initialize_types()
-    _JS_MAP[] = node"Map"o
-    _JS_SET[] = node"Set"o
-    _JS_ITERATOR_SYMBOL[] = node"Symbol.iterator"o
-    _JS_MAKE_PROMISE[] = node"""(promise, resolve, reject) => {
-        const p = promise
-            .then(resolve).catch(reject)
-        setTimeout(() => {}, 0)
-        return p
-    }"""o
-end
+@global_js_const _JS_MAP = "Map"
+is_map(v::NapiValue) = instanceof(v, _JS_MAP)
+@global_js_const _JS_SET = "Set"
+is_set(v::NapiValue) = instanceof(v, _JS_SET)
+@global_js_const _JS_ITERATOR_SYMBOL = "Symbol.iterator" false
+is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL, nothing; raw=true))
 
 macro wrap_coerce_convert(name)
     func_name = Symbol(:to_, name)

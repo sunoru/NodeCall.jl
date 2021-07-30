@@ -1,36 +1,30 @@
 const NodeContexts = Vector{NodeObject}()
-const _VM = Ref{NodeObject}()
-const _ASSIGN_DEFAULTS = Ref{NodeObject}()
+@global_js_const _VM = "require('vm')"
+@global_js_const _ASSIGN_DEFAULTS = """(() => {
+    const keys = ['console']
+    // Pass global functions
+    for (const key of Object.keys(globalThis)) {
+        if (key !== 'global' && !key.startsWith('_')) {
+            keys.push(key)
+        }
+    }
+    // Pass all the types (the global objects whose names start with a capital letter)
+    for (const key of Object.getOwnPropertyNames(globalThis)) {
+        if (key[0] === key[0].toUpperCase() && !key.startsWith('_')) {
+            keys.push(key)
+        }
+    }
+    return (ctx) => {
+        const defaults = new Object()
+        for (const key of keys) {
+            defaults[key] = globalThis[key]
+        }
+        return Object.assign(defaults, ctx)
+    }
+})()"""
 
 current_context() = let i = _GLOBAL_ENV.context_index
     i == 0 ? nothing : NodeContexts[i]
-end
-
-function _initialize_context()
-    _VM[] = node"require('vm')"o
-    _ASSIGN_DEFAULTS[] = node"""(() => {
-        const keys = ['console']
-        // Pass global functions
-        for (const key of Object.keys(globalThis)) {
-            if (key !== 'global' && !key.startsWith('_')) {
-                keys.push(key)
-            }
-        }
-        // Pass all the types (the global objects whose names start with a capital letter)
-        for (const key of Object.getOwnPropertyNames(globalThis)) {
-            if (key[0] === key[0].toUpperCase() && !key.startsWith('_')) {
-                keys.push(key)
-            }
-        }
-        return (ctx) => {
-            const defaults = new Object()
-            for (const key of keys) {
-                defaults[key] = globalThis[key]
-            }
-            return Object.assign(defaults, ctx)
-        }
-    })()"""o
-    new_context()
 end
 
 function get_context(index::Integer)
@@ -58,9 +52,9 @@ new_context(context_object=nothing; add_defaults=true, be_current=true) = @with_
         context_object = node"new Object()"r
     end
     if add_defaults
-        context_object = _ASSIGN_DEFAULTS[](context_object; raw=true)
+        context_object = _ASSIGN_DEFAULTS(context_object; raw=true)
     end
-    context = _VM[].createContext(
+    context = _VM.createContext(
         context_object;
         convert_result=false
     )

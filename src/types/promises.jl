@@ -15,7 +15,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
     setfield!(promise, :state, state)
     setfield!(promise, :result, result)
     if state == promise_rejected
-        _JS_MAKE_PROMISE[](promise, _ -> nothing, _ -> nothing; raw=true)
+        _JS_MAKE_PROMISE(promise, _ -> nothing, _ -> nothing; raw=true)
     elseif state == promise_pending
         resolve = (x) -> begin
             setfield!(promise, :state, promise_fulfilled)
@@ -25,7 +25,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
             setfield!(promise, :state, promise_rejected)
             setfield!(promise, :result, x);
         end
-        _JS_MAKE_PROMISE[](promise, resolve, reject; raw=true)
+        _JS_MAKE_PROMISE(promise, resolve, reject; raw=true)
     end
     promise
 end
@@ -63,7 +63,12 @@ function promise_state(
     state[], result
 end
 
-const _JS_MAKE_PROMISE = Ref{NodeObject}()
+@global_js_const _JS_MAKE_PROMISE = """(promise, resolve, reject) => {
+    const p = promise
+        .then(resolve).catch(reject)
+    setTimeout(() => {}, 0)
+    return p
+}"""
 Base.fetch(
     promise::ValueTypes;
     raw=false, convert_result=true

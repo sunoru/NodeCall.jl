@@ -69,7 +69,7 @@ end
 # napi_value(v::AbstractIterator)
 value(::Type{JsIterator}, v::NapiValue) = JsIterator(NodeObject(v))
 function Base.iterate(v::NapiValue, state = nothing; raw=false, convert_result=true)
-    iterator = isnothing(state) ? v[_JS_ITERATOR_SYMBOL[]]() : state
+    iterator = isnothing(state) ? v[_JS_ITERATOR_SYMBOL]() : state
     state = iterator.next(raw=true)
     state.done && return nothing
     result = get(state, "value", nothing; raw=raw, convert_result=convert_result)

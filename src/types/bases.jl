@@ -72,3 +72,35 @@ end
 catch
     nothing
 end
+
+macro global_js_const(def, is_object=true)
+    @assert def isa Expr && def.head == :(=) && length(def.args) == 2
+    typ = is_object ? :NodeObject : :NodeValueTemp
+    name, script = def.args
+    # Just a temporary use of `ObjectReference`
+    esc(quote
+        const $name = $typ()
+        if !haskey(ObjectReference, :global_init)
+            ObjectReference[:global_init] = Ref(Tuple{
+                Union{NodeObject, NodeValueTemp},
+                String
+            }[])
+        end
+        push!(ObjectReference[:global_init][], ($name, $script))
+    end)
+end
+
+_initialize_types() = @with_scope begin
+    for (ref, script) in ObjectReference[:global_init][]
+        nv = run_script(script, raw=true, context=nothing)
+        if ref isa NodeObject
+            v = @napi_call napi_create_reference(nv::NapiValue, 1::UInt32)::NapiRef
+            setfield!(ref, :ref, v)
+        else
+            v = getfield(NodeValueTemp(nv), :tempname)
+            setfield!(ref, :tempname, v)
+        end
+    end
+    delete!(ObjectReference, :global_init)
+end
+

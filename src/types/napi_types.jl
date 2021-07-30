@@ -1,6 +1,8 @@
 # Raw types from node_api.h
 module NapiTypes
 
+import Base: ==
+
 # Types
 export NapiPointer, NapiEnv, NapiValue,
     NapiRef, NapiHandleScope, NapiDeferred,
@@ -32,11 +34,12 @@ Base.convert(::Type{NapiEnv}, x::NapiEnv) = x
 Base.convert(::Type{NapiValue}, x::NapiValue) = x
 Base.show(io::IO, x::AbstractNapiPointer) = print(io, string(typeof(x), ": ", convert(Ptr{Nothing}, x)))
 NapiPointer(x::Ptr) = convert(NapiPointer, x)
+==(x::Ptr, y::AbstractNapiPointer) = x == Ptr{Nothing}(y)
 const NapiRef = NapiPointer
 const NapiHandleScope = NapiPointer
 const NapiDeferred = NapiPointer
-const NapiFinalize = Union{Base.CFunction, Ptr{Cvoid}}
-const NapiCallback = Union{Base.CFunction, Ptr{Cvoid}}
+const NapiFinalize = Ptr{Cvoid}
+const NapiCallback = Ptr{Cvoid}
 
 @enum NapiValueType begin
     napi_undefined

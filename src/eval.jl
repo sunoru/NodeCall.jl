@@ -43,7 +43,7 @@ function run_script(
             @napi_call napi_run_script(script::NapiValue)::NapiValue
         end
     else
-        _VM[].runInContext(
+        _VM.runInContext(
             script, context;
             raw=raw,
             convert_result=convert_result

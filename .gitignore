@@ -11,7 +11,7 @@ build/
 .idea/
 
 node_modules/
-package.json
+/package.json
 package-lock.json
 
 /Manifest.toml

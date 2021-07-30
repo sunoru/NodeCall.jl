@@ -119,6 +119,12 @@ using Dates: DateTime, now, Millisecond
         # Dictionary: only support String as key type to be mutated.
         dict = Dict("1"=>2, "3"=>4, "x"=>5)
         dict2 = node"""(d) => {
+            const expected_keys = new Set(["1", "3", "x"])
+            const keys = Array.from(Object.keys(d))
+            assert(
+                keys.length === expected_keys.size &&
+                keys.every((x) => expected_keys.has(x))
+            )
             d[1] = 5
             d[3] = 6
             d.x = 7
@@ -182,7 +188,7 @@ using Dates: DateTime, now, Millisecond
             y = x
             x * 2
         end
-        @test 200 == @await(p)
+        @test 200 == @await p
         @test y == 100
     end
 
