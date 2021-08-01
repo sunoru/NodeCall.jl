@@ -38,11 +38,11 @@ And JavaScript code can be run with `run_script` or `@node_str` (they are equiva
 ```julia
 julia> using NodeCall
 
-julia> node"console.log('Hello, world')"
-Hello, world
-
 julia> run_script("123 * 456")
 56088.0
+
+julia> node"console.log('Hello, world!')"
+Hello, world!
 ```
 
 To install a NPM package, use something like this:
@@ -69,21 +69,21 @@ julia> println(boxen("Generated in JS"))
 │Generated in JS│
 └───────────────┘
 
-# To pass an option object, you can use a `Dict{String, Any}` in Julia:
-julia> println(boxen("Dict as Object", Dict("padding"=>1, "borderStyle"=>"double")))
-╔════════════════════╗
-║                    ║
-║   Dict as Object   ║
-║                    ║
-╚════════════════════╝
+# To pass an option object, the easiest way is to use a `NamedTuple` in Julia:
+julia> println(boxen("Passing options", (padding=1, borderStyle="double")))
+╔═════════════════════╗
+║                     ║
+║   Passing options   ║
+║                     ║
+╚═════════════════════╝
 
-# Or more easily, you can just use a node string
-julia> println(boxen("Pass JS Object", node"{padding: 1}"))
-┌────────────────────┐
-│                    │
-│   Pass JS Object   │
-│                    │
-└────────────────────┘
+# Alternatively, you can just use a node string:
+julia> println(boxen("Passing a JS Object", node"{padding: 1}"))
+┌─────────────────────────┐
+│                         │
+│   Passing a JS Object   │
+│                         │
+└─────────────────────────┘
 ```
 
 See [`examples/`](./examples) or [`test/runtests.jl`](./test/runtests.jl) for more examples.

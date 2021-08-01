@@ -160,9 +160,11 @@ _get_cached(v::NapiValue) = @with_scope begin
         get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
         value(NodeExternal(jlobject_external))
     elseif T <: Tuple
-        T((value(t, v[i-1]) for (i, t) in enumerate(T.types))...)
+        T(v[i-1] for i in 1:length(T.types))
+    elseif T <: NamedTuple
+        T(v[string(key)] for key in fieldnames(T))
     else
-        T((v[string(key)] for key in fieldnames(T) if string(key) != _JLTYPE_PROPERTY)...)
+        T((v[string(key)] for key in fieldnames(T))...)
     end
 end
 

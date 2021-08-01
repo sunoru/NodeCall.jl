@@ -148,6 +148,12 @@ using Dates: DateTime, now, Millisecond
         foo_m = FooM("before")
         node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
         @test foo_m.x == "after"
+        # `Tuple`s and `NamedTuple`s
+        f4 = node"x => x"
+        t = (1, true, "z")
+        nt = (x=1, y=true, z="z")
+        @test f4(t) == t
+        @test f4(nt) == nt
     end
 
     @testset "import" begin
