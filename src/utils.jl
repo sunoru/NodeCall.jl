@@ -6,10 +6,11 @@ global_rng() = _GLOBAL_RNG
 
 macro napi_call(env, sym)
     has_return = sym.head == :(::)
+    status = gensym()
     func, result = if has_return
         sym.args[1], gensym()
     else
-        sym, :status
+        sym, status
     end
     define_vars = if has_return
         return_type = sym.args[2]
@@ -26,18 +27,19 @@ macro napi_call(env, sym)
     func.args[1].args[2] = QuoteNode(fname)
     esc(quote
         $define_vars
-        status = @ccall $func::NapiStatus
-        if status != NapiTypes.napi_ok
-            @debug status
+        $status = @ccall $func::NapiStatus
+        if $status != NapiTypes.napi_ok
+            @debug $status
             throw_error($env)
         end
         $result[]
     end)
 end
 macro napi_call(sym)
+    env = gensym()
     esc(quote
-        env = node_env()
-        @napi_call env $sym
+        $env = node_env()
+        @napi_call $env $sym
     end)
 end
 
