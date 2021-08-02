@@ -237,6 +237,14 @@ function make_set(v::NapiValue)
     Set(vs)
 end
 
+Base.NamedTuple(v::ValueTypes) = value(NamedTuple, v)
+value(::Type{T}, v::NapiValue) where T <: NamedTuple = @with_scope T(
+    v[string(k)] for k in fieldnames(T)
+)
+value(::Type{NamedTuple}, v::NapiValue) = @with_scope NamedTuple(
+    k => v[string(k)] for k in propertynames(v)
+)
+
 function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
     f_ptr = pointer(reference(f))
     data_ptr = isnothing(data) ? C_NULL : pointer(reference(data))

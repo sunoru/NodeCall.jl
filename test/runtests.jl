@@ -154,6 +154,8 @@ using Dates: DateTime, now, Millisecond
         nt = (x=1, y=true, z="z")
         @test f4(t) == t
         @test f4(nt) == nt
+        nt2 = node"{x:1, y:true, z:'z'}"
+        @test NamedTuple(nt2) == nt
     end
 
     @testset "import" begin

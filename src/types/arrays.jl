@@ -136,7 +136,6 @@ napi_value(v::AbstractArray) = _napi_value(v, nothing)
 napi_value(v::AbstractSet) = napi_value(collect(v); copy_array=true)
 
 Base.Array(v::ValueTypes) = value(Array, v)
-
 value(::Type{T}, v::NapiValue) where T <: AbstractArray = T(value(Array, v))
 value(
     ::Type{Array}, v::NapiValue;
@@ -179,4 +178,11 @@ elseif array_type == :dataview || isnothing(array_type) && is_dataview(v)
 else
     len = length(v)
     [v[i] for i in 0:len-1]
+end
+
+Base.Tuple(v::ValueTypes) = value(Tuple, v)
+value(::Type{T}, v::NapiValue) where T <: Tuple = T(value(Tuple, v))
+value(::Type{Tuple}, v::NapiValue) = @with_scope begin
+    len = length(v)
+    Tuple(v[i] for i in 0:len-1)
 end
