@@ -88,6 +88,13 @@ julia> println(boxen("Passing a JS Object", node"{padding: 1}"))
 
 See [`examples/`](./examples) or [`test/runtests.jl`](./test/runtests.jl) for more examples.
 
+## Known Issues
+
+One important problem of `NodeCall.jl` is that it cannot work with Julia's
+multi-thread/process functions, as well as the asynchronous methods involving `Task`s.
+However, asynchronous features in NodeJS (`Promise`s) works fine by
+awaiting them explicitly.
+
 ## Bug Reports & Contributing
 
 Please feel free to file issues and pull requests. Any feedback or help would be greatly appriciated.
