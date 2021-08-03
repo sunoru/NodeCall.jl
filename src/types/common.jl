@@ -1,6 +1,6 @@
 get_type(v::ValueTypes) = @napi_call napi_typeof(v::NapiValue)::NapiValueType
 
-instanceof(a::ValueTypes, b::ValueTypes) = @with_scope try
+instanceof(a, b) = @with_scope try
     @napi_call napi_instanceof(a::NapiValue, b::NapiValue)::Bool
 catch _
     false

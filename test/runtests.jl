@@ -1,64 +1,10 @@
 using NodeCall, Test
-using Dates: DateTime, now, Millisecond
+using Dates: now, Millisecond
 
 @testset "NodeCall.jl" begin
+    NodeCall.initialize()
 
-    @testset "types" begin
-        # Primitive values:
-        # `undefined` and `null`: both nothing
-        @test node"undefined" ≡ nothing
-        @test node"null" ≡ nothing
-        # `boolean`:
-        @test node"false" || node"true"
-        # `number`: always `Float64`
-        @test node"0" ≡ 0.0 && node"Infinity" ≡ Inf && node"NaN" ≡ NaN
-        # `string`
-        @test node"'a string'" ≡ "a string"
-        # `bigint`
-        @test node"282278710948156123453635394322245338923n" == 282278710948156123453635394322245338923
-        # `symbol`
-        @test node"Symbol.for('sym')" ≡ :sym
-
-        # Objects:
-        # `object`
-        @test typeof(node"{}") ≡ JsObject
-        @test typeof(node"[]"o) ≡ NodeObject
-        # `function`
-        @test typeof(node"eval") ≡ JsFunction{Nothing}
-
-        # `Date`:
-        @test typeof(node"new Date()") ≡ DateTime
-        # `Array`: try to convert
-        @test typeof(node"[]") ≡ Vector{Any}
-        @test typeof(node"[1]") ≡ Vector{Float64}
-        @test typeof(node"[2, 't']") ≡ Vector{Any}
-        @test typeof(node"[3, 123n]") ≡ Vector{Real}
-        # Typed arrays:
-        @test typeof(node"new Int8Array(1)") ≡ Vector{Int8}
-        @test typeof(node"new Uint8Array(1)") ≡ Vector{UInt8}
-        @test typeof(node"new Uint8ClampedArray(1)") ≡ Vector{UInt8}
-        @test typeof(node"new Int16Array(1)") ≡ Vector{Int16}
-        @test typeof(node"new Uint16Array(1)") ≡ Vector{UInt16}
-        @test typeof(node"new Int32Array(1)") ≡ Vector{Int32}
-        @test typeof(node"new Uint32Array(1)") ≡ Vector{UInt32}
-        @test typeof(node"new Float32Array(1)") ≡ Vector{Float32}
-        @test typeof(node"new Float64Array(1)") ≡ Vector{Float64}
-        @test typeof(node"new BigInt64Array(1)") ≡ Vector{Int64}
-        @test typeof(node"new BigUint64Array(1)") ≡ Vector{UInt64}
-        # `Map`, `WeekMap`, `Set`, `WeakSet`
-        @test typeof(node"new Map()") ≡ Dict{Any, Any}
-        @test typeof(node"new WeakMap()") ≡ JsObject
-        @test typeof(node"new Set()") ≡ Set{Any}
-        @test typeof(node"new WeakSet()") ≡ JsObject
-        # `ArrayBuffer`, `SharedArrayBuffer`, `DataView`
-        @test typeof(node"new ArrayBuffer(1)") ≡ Vector{UInt8}
-        @test typeof(node"new SharedArrayBuffer(1)") ≡ JsObject # Vector{UInt8}
-        @test typeof(node"new DataView(new ArrayBuffer(1))") ≡ Vector{UInt8}
-        @test instanceof(node_value(Vector{Float64}()), node"Float64Array")
-        # `Promise`
-        @test typeof(node"new Promise(()=>{})") ≡ JsPromise
-    end
-
+    include("types.jl")
     @testset "eval" begin
         Math = node"Math"
         @test typeof(Math) ≡ JsObject
@@ -237,7 +183,7 @@ using Dates: DateTime, now, Millisecond
         @test read(node("--version"), String) |> strip == "v14.17.3"
         @test read(npm("--version"), String) |> strip == "6.14.13"
         @test read(npx("--version"), String) |> strip == "6.14.13"
-        # Explicitly invoke `dispose!` to test it.
-        NodeCall.dispose!(NodeCall._GLOBAL_ENV)
+        # Explicitly invoke `dispose` to test it.
+        NodeCall.dispose()
     end
 end

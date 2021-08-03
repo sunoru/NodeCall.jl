@@ -133,8 +133,6 @@ function napi_value(
 end
 napi_value(v::AbstractArray) = _napi_value(v, nothing)
 
-napi_value(v::AbstractSet) = napi_value(collect(v); copy_array=true)
-
 Base.Array(v::ValueTypes) = value(Array, v)
 value(::Type{T}, v::NapiValue) where T <: AbstractArray = T(value(Array, v))
 value(

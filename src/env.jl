@@ -14,6 +14,8 @@ node_env() = _GLOBAL_ENV.env
 node_uvloop() = _GLOBAL_ENV.loop
 const _INITIALIZED = Ref(false)
 initialized() = _INITIALIZED[]
+const _STARTED_FROM_NODE = Ref(false)
+started_from_node() = _STARTED_FROM_NODE[]
 
 @enum UvRunMode begin
   UV_RUN_DEFAULT = 0
@@ -36,20 +38,22 @@ function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
 end
 
 function initialize!(env, addon_path, args)
+    env
+end
+
+function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
+    initialized() && return
+    _STARTED_FROM_NODE[] = !isnothing(env)
+    env, loop = if started_from_node()
+        env = reinterpret(NapiEnv, UInt64(env))
+        loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
+        env, loop
+    else
+        start_node(args)
+    end
+    _GLOBAL_ENV.env = env
+    _GLOBAL_ENV.loop = loop
     @debug "Initializing NodeJS..."
-    _env = Ref{NapiEnv}()
-    loop = Ref{Ptr{Cvoid}}()
-    ret = @ccall :libjlnode.initialize(
-        pointer_from_objref(NodeCall)::Ptr{Cvoid},
-        addon_path::Cstring,
-        args::Ptr{Cstring},
-        length(args)::Csize_t,
-        _env::Ptr{NapiEnv},
-        loop::Ptr{Ptr{Cvoid}}
-    )::Cint
-    @assert ret == 0
-    env.env = _env[]
-    env.loop = loop[]
     run_script("""(() => {
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
@@ -60,13 +64,10 @@ function initialize!(env, addon_path, args)
     _INITIALIZED[] = true
     # run_node_uvloop()
     @debug "NodeJS initialized."
-    env
 end
 
-function dispose!(_env)
-    if !initialized()
-        return
-    end
+function dispose()
+    !initialized() && return
     @debug "Disposing NodeJS..."
     _INITIALIZED[] = false
     ret = @ccall :libjlnode.dispose()::Cint
@@ -75,12 +76,28 @@ function dispose!(_env)
 end
 
 function start_node(args=split(get(ENV, "JLNODE_ARGS", "")))
-    initialize!(_GLOBAL_ENV, jlnode_addon, args)
+    initialized() && return
+    @debug "Starting NodeJS instance..."
+    env = Ref{NapiEnv}()
+    loop = Ref{Ptr{Cvoid}}()
+    ret = @ccall :libjlnode.initialize(
+        pointer_from_objref(NodeCall)::Ptr{Cvoid},
+        jlnode_addon::Cstring,
+        args::Ptr{Cstring},
+        length(args)::Csize_t,
+        env::Ptr{NapiEnv},
+        loop::Ptr{Ptr{Cvoid}}
+    )::Cint
+    @assert ret == 0
+    env[], loop[]
 end
 
 function __init__()
-    if get(ENV, "JLNODE_AUTOSTART", "1") == "1"
-        start_node()
+    # Auto start and initialize NodeJS if in REPL.
+    if isinteractive()
+        initialize()
     end
-    finalizer(dispose!, _GLOBAL_ENV)
+    finalizer(_GLOBAL_ENV) do _
+        dispose()
+    end
 end

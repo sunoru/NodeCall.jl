@@ -94,6 +94,13 @@ function create_object_dict(x::AbstractDict)
     end
     m
 end
+function create_object_set(x::AbstractSet)
+    m = run_script("new Set()", raw=true)
+    for v in x
+        m.add(v)
+    end
+    m
+end
 create_object_tuple(x) = _napi_value(collect(x))
 create_object_mutable(x) = @napi_call create_object_mutable(
     pointer_from_objref(x)::Ptr{Cvoid}
@@ -120,6 +127,8 @@ function napi_value(v::T; vtype = nothing) where T
     mut = ismutable(v)
     nv = if vtype ≡ :strdict || vtype ≡ :dict
         create_object_dict(v)
+    elseif vtype ≡ :set
+        create_object_set(v)
     elseif vtype ≡ :tuple
         create_object_tuple(v)
     elseif mut
@@ -140,6 +149,7 @@ function napi_value(v::T; vtype = nothing) where T
 end
 napi_value(d::AbstractDict{String}) = napi_value(d, vtype = :strdict)
 napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
+napi_value(s::AbstractSet) = napi_value(s, vtype = :set)
 napi_value(t::Tuple) = napi_value(t, vtype = :tuple)
 
 value(::Type{JsObject}, v::NapiValue) = JsObject(NodeObject(v))
