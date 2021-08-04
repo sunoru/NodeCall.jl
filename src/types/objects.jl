@@ -125,7 +125,7 @@ const _JLTYPE_PROPERTY = "__jl_type"
 const _JLPTR_PROPERTY = "__jl_ptr"
 function napi_value(v::T; vtype = nothing) where T
     mut = ismutable(v)
-    nv = if vtype ≡ :strdict || vtype ≡ :dict
+    nv = if vtype ≡ :dict
         create_object_dict(v)
     elseif vtype ≡ :set
         create_object_set(v)
@@ -147,7 +147,6 @@ function napi_value(v::T; vtype = nothing) where T
     define_properties!(nv, ps)
     nv
 end
-napi_value(d::AbstractDict{String}) = napi_value(d, vtype = :strdict)
 napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
 napi_value(s::AbstractSet) = napi_value(s, vtype = :set)
 napi_value(t::Tuple) = napi_value(t, vtype = :tuple)

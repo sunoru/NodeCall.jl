@@ -1,4 +1,5 @@
 import Base: eventloop
+import Libdl
 import Random
 
 using libjlnode_jll
@@ -43,6 +44,7 @@ end
 
 function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     initialized() && return
+    Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL)
     _STARTED_FROM_NODE[] = !isnothing(env)
     env, loop = if started_from_node()
         env = reinterpret(NapiEnv, UInt64(env))
