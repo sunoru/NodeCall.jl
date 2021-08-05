@@ -3,7 +3,15 @@ struct NodeError <: NodeValue
 end
 NodeError(value::NapiValue) = NodeError(NodeObject(value))
 
-Base.show(io::IO, v::NodeError) = print(io, v.message)
+function Base.show(io::IO, v::NodeError)
+    print(io, "NodeError(")
+    print(io, getfield(v, :o))
+    print(io, ")")
+end
+function Base.showerror(io::IO, v::NodeError)
+    print(io, "NodeError: ")
+    print(io, v.message)
+end
 napi_value(node_error::NodeError) = napi_value(getfield(node_error, :o))
 
 node_throw(err::NapiValue) = @napi_call napi_throw(err::NapiValue)
