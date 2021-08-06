@@ -27,8 +27,18 @@ jobs:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.julia-arch }}
       
+      - name: Download artifact of jlnode
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: build.yml
+          name: ${{ matrix.os }}-dist
+          path: jlnode
+          repo: sunoru/jlnode
       - name: Set up latest jlnode
-        run: julia .github/setup-jlnode.jl
+        run: |
+          JLNODE_ARTIFACT=`julia --project=. -e "using Pkg;Pkg.instantiate();using libjlnode_jll;libjlnode_jll.dev_jll();println(libjlnode_jll.artifact_dir)"`
+          mv jlnode/lib/* $JLNODE_ARTIFACT/lib/
       
       - name: Test
         uses: julia-actions/julia-runtest@latest
