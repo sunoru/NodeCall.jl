@@ -19,7 +19,7 @@ Base.show(io::IO, v::NodeExternal) = print(io, string(
 
 node_value(v::NodeExternal) = v
 
-external_finalize(ptr::Ptr{Cvoid}) = dereference(ptr)
+external_finalizer(ptr::Ptr{Cvoid}) = dereference(ptr)
 
 napi_value(v::NodeExternal) = @napi_call create_external(pointer(v)::UInt64)::NapiValue
 

@@ -1,8 +1,5 @@
+include("test_common.jl")
 using Dates: DateTime
-if !@isdefined(NodeCall)
-    using Test, NodeCall
-    NodeCall.initialize()
-end
 
 macro check_type(js_script, jl_type, jl_script=nothing, js_type=nothing)
     quote
@@ -36,7 +33,7 @@ end
 
     # Objects:
     # `object`
-    @test typeof(node"[]"o) ≡ NodeObject
+    @test node"[]"o isa NodeObject
     @check_type node"{}" JsObject (x=1,) node"Object" 
     # `function`
     @check_type node"eval" JsFunction{Nothing} println node"Function"
@@ -61,9 +58,9 @@ end
     @check_type node"new BigInt64Array(1)"     Vector{Int64}    Int64[]   node"BigInt64Array" 
     @check_type node"new BigUint64Array(1)"    Vector{UInt64}   UInt64[]  node"BigUint64Array"
     # `Map`, `WeekMap`, `Set`, `WeakSet`
-    @check_type node"new Map()"     Dict{Any, Any} Dict(1=>2, "x"=>:sym) node"Map"
+    @check_type node"new Map()"     Dict{Any, Any}
     @check_type node"new WeakMap()" JsObject
-    @check_type node"new Set()"     Set{Any}       Set([1,2,3])          node"Set"
+    @check_type node"new Set()"     Set{Any}
     @check_type node"new WeakSet()" JsObject
     # `ArrayBuffer`, `SharedArrayBuffer`, `DataView`
     @check_type node"new ArrayBuffer(1)" Vector{UInt8}

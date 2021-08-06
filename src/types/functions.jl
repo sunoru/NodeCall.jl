@@ -9,7 +9,8 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
 (func::ValueTypes)(
     args...;
     recv=nothing, pass_copy=false,
-    raw=false, convert_result=true
+    raw=false, convert_result=true,
+    context=current_context()
 ) = with_result(raw, convert_result) do
     if pass_copy
         args = deepcopy.(args)
@@ -17,9 +18,9 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
     recv = if isnothing(recv)
         if typeof(func) <: JsFunction
             this = getfield(func, :this)
-            isnothing(this) ? get_global() : this
+            isnothing(this) ? get_global(context) : this
         else
-            get_global()
+            get_global(context)
         end
     else
         recv
@@ -30,8 +31,6 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
         recv::NapiValue, func::NapiValue, argc::Csize_t, argv::Ptr{NapiValue}
     )::NapiValue
 end
-
-wrap_function(f) = @cfunction($f, NapiValue, (NapiEnv, NapiCallbackInfo))
 
 function get_callback_info(env::NapiEnv, info::NapiPointer, argc = 6)
     argv = Vector{NapiValue}(undef, argc)

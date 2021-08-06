@@ -15,7 +15,7 @@ include("eval.jl")
 export NapiValue, NodeValue, JsValue, NodeError,
        NodeValueTemp, NodeObject, NodeExternal,
        JsUndefined, JsNull, JsBoolean, JsNumber, JsString, JsBigInt, JsSymbol,
-       JsObject, JsFunction, JsPromise
+       JsObject, JsIterator, JsFunction, JsPromise
 export napi_value, node_value, value
 export create_object, @new
 export set!, instanceof

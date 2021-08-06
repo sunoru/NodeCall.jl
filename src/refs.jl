@@ -13,6 +13,9 @@ const ObjectReference = IdDict{Any, RefValue}()
 # Pointers -> Reference
 const ReferenceCache = Dict{Ptr{Cvoid}, ReferenceEntry}()
 
+const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}}
+_get_pointer(ref::RefValue{T}) where T = Ptr{Cvoid}(pointer_from_objref(T.mutable ? ref[] : ref))
+_get_pointer(ref::RefValue{T}) where T <: TypedCompatibleArray = Ptr{Cvoid}(pointer(ref[]))
 get_reference(id::Union{UInt64, Ptr}) = get(ReferenceCache, Ptr{Cvoid}(id), nothing)
 
 delete_reference(id::Union{UInt64, Ptr}) = let ref = pop!(ReferenceCache, Ptr{Cvoid}(id), nothing)
@@ -24,11 +27,14 @@ delete_reference(id::Union{UInt64, Ptr}) = let ref = pop!(ReferenceCache, Ptr{Cv
     end
 end
 
-function make_reference(object::T) where T
+_make_ref(object) = Ref(object)
+_make_ref(arr::Base.ReinterpretArray) = _make_ref(parent(arr))
+
+function make_reference(object)
     ref = get!(ObjectReference, object) do
-        Ref(object)
+        _make_ref(object)
     end
-    ptr = Ptr{Cvoid}(pointer_from_objref(T.mutable ? object : ref))
+    ptr = _get_pointer(ref)
     entry = get(ReferenceCache, ptr) do
         ReferenceEntry(ref, 0)
     end
@@ -42,7 +48,7 @@ function reference(id::Union{UInt64, Ptr})
     ReferenceCache[ptr] = ReferenceEntry(entry.ref, entry.count + 1)
 end
 dereference(object::T) where T = initialized() && haskey(ObjectReference, object) ? dereference(
-    pointer_from_objref(T.mutable ? object : ObjectReference[object])
+    _get_pointer(ObjectReference[object])
 ) : nothing
 function dereference(id::Union{UInt64, Ptr})
     ptr = Ptr{Cvoid}(id)

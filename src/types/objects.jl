@@ -43,6 +43,8 @@ create_object(
     nv
 end
 
+@global_js_const _JS_OBJECT = "Object"
+@global_js_const _JS_OBJECT_KEYS_LENGTH = "(o) => Object.keys(o).length"
 @global_js_const _JS_OBJECT_PROXY = raw"""(() => {
     const preserved_keys = [
         "__get__", "__set__", "__has__", "__keys__",
@@ -88,14 +90,6 @@ end
     })
 })()"""
 create_object_dict(x::AbstractDict) = create_object_mutable(x)
-# create_object_dict(x::AbstractDict{String}) = create_object_mutable(x)
-# function create_object_dict(x::AbstractDict)
-#     m = run_script("new Map()", raw=true)
-#     for (k, v) in x
-#         m.set(k, v)
-#     end
-#     m
-# end
 function create_object_set(x::AbstractSet)
     m = run_script("new Set()", raw=true)
     for v in x
@@ -169,24 +163,33 @@ _get_cached(v::NapiValue) = @with_scope begin
     get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
     T = value(NodeExternal, jltype_external)::DataType
     isnothing(T) && return nothing
-    if T <: AbstractDict && !(T <: AbstractDict{String})
+    if T <: AbstractSet
         return value(T, v)
     elseif T.mutable
         jlobject_external = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
         get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
         value(NodeExternal(jlobject_external))
     elseif T <: Tuple
-        T(v[i-1] for i in 1:length(T.types))
+        len = length(T.types)
+        length(v) == len || return nothing
+        T(v[i-1] for i in 1:len)
     elseif T <: NamedTuple
+        len = _JS_OBJECT_KEYS_LENGTH(v)
+        length(T.types) == len || return nothing
         T(v[string(key)] for key in fieldnames(T))
     else
+        len = _JS_OBJECT_KEYS_LENGTH(v)
+        length(T.types) == len || return nothing
         T((v[string(key)] for key in fieldnames(T))...)
     end
 end
 
 function object_value(v::NapiValue)
-    cached = _get_cached(v)
-    isnothing(cached) || return cached
+    try
+        cached = _get_cached(v)
+        isnothing(cached) || return cached
+    catch _
+    end
     if is_date(v)
         value(DateTime, v)
     elseif is_array(v)
@@ -270,7 +273,7 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
     nv
 end
 
-function object_finalizer(f_ptr, data_ptr)
+object_finalizer(f_ptr, data_ptr) = if initialized() 
     f = value(dereference(f_ptr))
     data = dereference(data_ptr)
     f(value(data))

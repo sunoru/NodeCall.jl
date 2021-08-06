@@ -59,18 +59,16 @@ function _napi_value(v::AbstractArray)
     end
     nv
 end
-# Pointer => (ArrayBuffer, ByteSize, RefCount)
-const ArrayBufferCache = Dict{Ptr{Cvoid}, Tuple{NodeObject, Int, Int}}()
-array_finalizer(arraybuffer) = @with_scope begin
-    initialized() || return
-    ptr = arraybuffer_info(napi_value(arraybuffer)).data
-    haskey(ArrayBufferCache, ptr) || return
-    v, byte_length, ref_count = ArrayBufferCache[ptr]
-    if ref_count > 1
-        ArrayBufferCache[ptr] = (v, byte_length, ref_count - 1)
-    end
+# Pointer => ArrayBuffer
+# Note: since we cannot call napi_create_external_arraybuffer on the same memory twice,
+# these references will never be freed.
+const ArrayBufferCache = Dict{Ptr{Cvoid}, NodeObject}()
+
+arraybuffer_finalizer(ptr) = if initialized()
+    delete!(ArrayBufferCache, Ptr{Cvoid}(ptr))
+    dereference(ptr)
 end
-const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}}
+
 function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
     isnothing(typedarray_type) && return _napi_value(v)
     T = eltype(v)
@@ -80,25 +78,20 @@ function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
         data = Ref{Ptr{Cvoid}}()
         ab = @napi_call napi_create_arraybuffer(byte_length::Csize_t, data::Ptr{Ptr{Cvoid}})::NapiValue
         @ccall memcpy(data[]::Ptr{Cvoid}, v::Ptr{Cvoid}, byte_length::Csize_t)::Ptr{Cvoid}
-        NodeObject(ab)
     else
         ptr = Ptr{Cvoid}(pointer(v))
-        ab, byte_length2, ref_count = get(ArrayBufferCache, ptr) do
-            ab = @napi_call napi_create_external_arraybuffer(
-                v::Ptr{Cvoid}, byte_length::Csize_t,
-                C_NULL::NapiPointer, C_NULL::NapiPointer
-            )::NapiValue
-            NodeObject(ab), byte_length, 0
+        # ab = get!(ArrayBufferCache, ptr) do
+        ab = begin
+            reference(v)
+            ab = @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
+            NodeObject(ab)
         end
-        @assert byte_length == byte_length2
-        ArrayBufferCache[ptr] = (ab, byte_length, ref_count + 1)
-        ab
+        napi_value(ab)
     end
     nv = @napi_call napi_create_typedarray(
         typedarray_type::NapiTypedArrayType, n::Csize_t,
         arraybuffer::NapiValue, 0::Csize_t
     )::NapiValue
-    add_finalizer!(nv, array_finalizer, arraybuffer)
     nv
 end
 
