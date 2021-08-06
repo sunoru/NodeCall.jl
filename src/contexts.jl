@@ -67,9 +67,9 @@ end
 
 function delete_context(index::Integer=_GLOBAL_ENV.context_index)
     if _GLOBAL_ENV.context_index == index
-        _GLOBAL_ENV.context_index = 0
+        _GLOBAL_ENV.context_index = length(NodeContexts) == 1 ? 0 : 1
     end
-    ret = deleteat!(NodeContexts, index)
+    deleteat!(NodeContexts, index)
     if length(NodeContexts) == 0
         new_context()
     end
@@ -82,6 +82,13 @@ function delete_context(context)
         end
     end
     false
+end
+
+function clear_context() 
+    _GLOBAL_ENV.context_index = 0
+    resize!(NodeContexts, 0)
+    new_context()
+    nothing
 end
 
 list_contexts() = copy(NodeContexts)

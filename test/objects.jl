@@ -70,5 +70,16 @@ using Dates
     @test named_tuple3 isa JsObject
     @test NamedTuple(named_tuple3) ≡ (x="t", y=true, z="z")
 
+    struct Foo
+        x::Int
+    end
+    @test node"(foo) => (foo.x = 3, foo)"(Foo(5)) == Foo(3)
+    mutable struct FooM
+        x::String
+    end
+    foo_m = FooM("before")
+    node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
+    @test foo_m.x == "after"
+
     delete_context()
 end

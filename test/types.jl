@@ -1,5 +1,5 @@
 include("test_common.jl")
-using Dates: DateTime
+using Dates
 
 macro check_type(js_script, jl_type, jl_script=nothing, js_type=nothing)
     quote
