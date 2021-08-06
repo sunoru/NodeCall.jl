@@ -27,7 +27,7 @@ jobs:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.julia-arch }}
       
-      - name: Use latest jlnode
+      - name: Set up latest jlnode
         run: julia .github/setup-jlnode.jl
       
       - name: Test
