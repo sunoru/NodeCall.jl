@@ -59,15 +59,8 @@ function _napi_value(v::AbstractArray)
     end
     nv
 end
-# Pointer => ArrayBuffer
-# Note: since we cannot call napi_create_external_arraybuffer on the same memory twice,
-# these references will never be freed.
-const ArrayBufferCache = Dict{Ptr{Cvoid}, NodeObject}()
 
-arraybuffer_finalizer(ptr) = if initialized()
-    delete!(ArrayBufferCache, Ptr{Cvoid}(ptr))
-    dereference(ptr)
-end
+arraybuffer_finalizer(ptr) = dereference(ptr)
 
 function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
     isnothing(typedarray_type) && return _napi_value(v)
@@ -78,15 +71,10 @@ function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
         data = Ref{Ptr{Cvoid}}()
         ab = @napi_call napi_create_arraybuffer(byte_length::Csize_t, data::Ptr{Ptr{Cvoid}})::NapiValue
         @ccall memcpy(data[]::Ptr{Cvoid}, v::Ptr{Cvoid}, byte_length::Csize_t)::Ptr{Cvoid}
+        ab
     else
-        ptr = Ptr{Cvoid}(pointer(v))
-        # ab = get!(ArrayBufferCache, ptr) do
-        ab = begin
-            reference(v)
-            ab = @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
-            NodeObject(ab)
-        end
-        napi_value(ab)
+        ptr = pointer(reference(v))
+        @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
     end
     nv = @napi_call napi_create_typedarray(
         typedarray_type::NapiTypedArrayType, n::Csize_t,

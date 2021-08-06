@@ -5,7 +5,7 @@ struct ReferenceEntry{T}
     ref::RefValue{T}
     count::Int
 end
-Base.pointer(ref::ReferenceEntry{T}) where T = pointer_from_objref(T.mutable ? ref.ref[] : ref.ref)
+Base.pointer(ref::ReferenceEntry) = _get_pointer(ref.ref)
 Base.getindex(ref::ReferenceEntry) = ref.ref[]
 
 # Objects (id) -> Pointers
