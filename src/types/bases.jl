@@ -56,22 +56,6 @@ end
 # For being called in C++ code.
 @noinline napi_value_from_value(v) = napi_value(v)
 @noinline napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
-@noinline jlnode_setindex!(o, v, k) = try
-    setindex!(o, v, k)
-    v
-catch
-    nothing
-end
-@noinline jlnode_getproperty(o, k) = try
-    getproperty(o, Symbol(k))
-catch
-    nothing
-end
-@noinline jlnode_setproperty!(o, k, v) = try
-    setproperty!(o, Symbol(k), v)
-catch
-    nothing
-end
 
 macro global_js_const(def, is_object=true)
     @assert def isa Expr && def.head == :(=) && length(def.args) == 2

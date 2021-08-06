@@ -25,8 +25,11 @@ jobs:
         uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.julia-version }}
-          arch: ${{ matrix.julia-arch }}       
-
+          arch: ${{ matrix.julia-arch }}
+      
+      - name: Use latest jlnode
+        run: julia .github/setup-jlnode.jl
+      
       - name: Test
         uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1

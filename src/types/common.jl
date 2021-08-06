@@ -111,3 +111,28 @@ Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
 Base.propertynames(o::ValueTypes) = Symbol.(keys(o))
 Base.getindex(o::ValueTypes, key) = get(o, key)
 Base.setindex!(o::ValueTypes, value, key) = set!(o, key, value)
+
+_convert_key(::AbstractDict{T}, k::T) where T = k
+_convert_key(::AbstractDict{String}, k) = string(k)
+_convert_key(::AbstractDict{T}, k::AbstractString) where T <: Number = T(
+    if isconcretetype(T)
+        parse(T, k)
+    else
+        parse(Float64, k)
+    end
+)
+_convert_key(::AbstractDict{T}, k) where T = convert(T, k)
+
+@noinline jlnode_getproperty(o, k) = getproperty(o, Symbol(k))
+@noinline jlnode_getproperty(o::AbstractDict, k) = getindex(o, _convert_key(o, k))
+@noinline jlnode_setproperty!(o, k, v) = setproperty!(o, Symbol(k), v)
+@noinline jlnode_setproperty!(o::AbstractDict, k, v) = setindex!(o, v, _convert_key(o, k))
+@noinline jlnode_propertynames(o) = string.(propertynames(o))
+@noinline jlnode_propertynames(o::AbstractDict) = keys(o)
+@noinline jlnode_propertynames(o::Module) = names(o)
+@noinline jlnode_hasproperty(o, k) = hasproperty(o, Symbol(k))
+@noinline jlnode_hasproperty(o::AbstractDict, k) = try
+    haskey(o, _convert_key(o, k))
+catch
+    false
+end

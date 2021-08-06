@@ -43,15 +43,23 @@ create_object(
     nv
 end
 
-@global_js_const _JS_DICT_PROXY = raw"""(() => {
+@global_js_const _JS_OBJECT_PROXY = raw"""(() => {
     const preserved_keys = [
         "__get__", "__set__", "__has__", "__keys__",
         "__jl_type", "__jl_ptr"
     ]
-    return (dict) => new Proxy(dict, {
+    return (object) => new Proxy(object, {
         get: function (target, prop) {
             if (prop === "__jl_type" || prop === "__jl_ptr") {
                 return Reflect.get(target, prop)
+            } else if (prop === "toJSON" && !this.has(target, prop)) {
+                return () => {
+                    const x = new Object()
+                    for (const key of target.__keys__()) {
+                        x[key] = this.get(target, key)
+                    }
+                    return JSON.stringify(x)
+                }
             }
             return target.__get__(prop)
         },
@@ -60,7 +68,7 @@ end
         },
         has: (target, prop) => target.__has__(prop),
         ownKeys: (target) => {
-            const keys = [...preserved_keys]
+            const keys = Reflect.ownKeys(target)
             for (const key of target.__keys__()) {
                 keys.push(key.toString())
             }
@@ -79,21 +87,15 @@ end
         }
     })
 })()"""
-function create_object_dict(x::AbstractDict{String})
-    ref = reference(x)
-    t = @napi_call create_object_dict(
-        pointer(ref)::Ptr{Cvoid}
-    )::NapiValue
-    add_finalizer!(t, dereference, x)
-    _JS_DICT_PROXY(t; raw=true)
-end
-function create_object_dict(x::AbstractDict)
-    m = run_script("new Map()", raw=true)
-    for (k, v) in x
-        m.set(k, v)
-    end
-    m
-end
+create_object_dict(x::AbstractDict) = create_object_mutable(x)
+# create_object_dict(x::AbstractDict{String}) = create_object_mutable(x)
+# function create_object_dict(x::AbstractDict)
+#     m = run_script("new Map()", raw=true)
+#     for (k, v) in x
+#         m.set(k, v)
+#     end
+#     m
+# end
 function create_object_set(x::AbstractSet)
     m = run_script("new Set()", raw=true)
     for v in x
@@ -102,9 +104,14 @@ function create_object_set(x::AbstractSet)
     m
 end
 create_object_tuple(x) = _napi_value(collect(x))
-create_object_mutable(x) = @napi_call create_object_mutable(
-    pointer_from_objref(x)::Ptr{Cvoid}
-)::NapiValue
+function create_object_mutable(x)
+    ref = pointer(reference(x))
+    v = @napi_call create_object_mutable(
+        ref::Ptr{Cvoid}
+    )::NapiValue
+    add_finalizer!(v, dereference, ref)
+    _JS_OBJECT_PROXY(v; raw=true)
+end
 function create_object_immutable(x::T) where T
     nv = create_object(raw=true)
     for k in fieldnames(T)
