@@ -19,8 +19,22 @@ using Random
     set_copy_array(true)
     js_arr = node_value(arr1)
     @test length(js_arr) == 20
-    js_buffer = get(js_arr, "buffer", convert_result=false)
-    @test length(js_buffer) == 160
+    # `in` is checking indices.
+    @test 0 in js_arr
+    @test js_arr[0] == 5
+    arr3 = Array(js_arr)
+    set_copy_array(false)
+    @test pointer(arr1) != pointer(arr3)
+    js_arraybuffer = get(js_arr, "buffer", convert_result=false)
+    @test length(js_arraybuffer) == 160
+    dataview = @new node"DataView"(js_arraybuffer)
+    @test length(dataview) == 160
+
+    js_buffer = node"Buffer.alloc(5)"o
+    @test value(Vector{UInt8}, js_buffer) == zeros(UInt8, 5)
+    @test length(js_buffer) == 5
+    @test Tuple(js_buffer) == Tuple(zeros(UInt8, 5))
+    @test value(Tuple{Int, Int}, node"[1,2]"o) == (1, 2)
 
     delete_context()
 end

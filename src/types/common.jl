@@ -1,4 +1,4 @@
-get_type(v::ValueTypes) = @napi_call napi_typeof(v::NapiValue)::NapiValueType
+get_type(v::NapiValue) = @napi_call napi_typeof(v::NapiValue)::NapiValueType
 
 instanceof(a, b) = @with_scope try
     @napi_call napi_instanceof(a::NapiValue, b::NapiValue)::Bool
@@ -13,16 +13,15 @@ macro wrap_is_type(name)
     func_name = Symbol(:is_, name)
     napi_name = Symbol(:napi_, func_name)
     @eval $func_name(v::NapiValue) = @napi_call $napi_name(v::NapiValue)::Bool
-    @eval $func_name(v::ValueTypes) = @with_scope $func_name(NapiValue(v))
 end
 
 @wrap_is_type array
 @wrap_is_type arraybuffer
 @wrap_is_type buffer
-@wrap_is_type date
-@wrap_is_type error
 @wrap_is_type typedarray
 @wrap_is_type dataview
+@wrap_is_type date
+@wrap_is_type error
 @wrap_is_type promise
 
 @global_js_const _JS_MAP = "Map"
@@ -31,6 +30,17 @@ is_map(v::NapiValue) = instanceof(v, _JS_MAP)
 is_set(v::NapiValue) = instanceof(v, _JS_SET)
 @global_js_const _JS_ITERATOR_SYMBOL = "Symbol.iterator" false
 is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL, nothing; raw=true))
+
+for func in (
+    :get_type,
+    :is_array, :is_arraybuffer, :is_buffer,
+    :is_typedarray, :is_dataview,
+    :is_date, :is_error,
+    :is_promise,
+    :is_map, :is_set, :is_iterator
+)
+    @eval $func(v) = @with_scope $func(napi_value(v))
+end
 
 macro wrap_coerce_convert(name)
     func_name = Symbol(:to_, name)
@@ -68,6 +78,7 @@ end
 Base.delete!(o::ValueTypes, key) = @with_scope begin
     @napi_call napi_delete_property(o::NapiValue, key::NapiValue)::Bool
 end
+Base.in(key, o::ValueTypes) = haskey(o, key)
 
 Base.get(
     o::ValueTypes, key::AbstractString, default=nothing;
@@ -81,7 +92,7 @@ set!(o::ValueTypes, key::AbstractString, value) = @with_scope begin
     @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)
 end
 Base.haskey(o::ValueTypes, key::AbstractString) = @with_scope begin
-    @napi_call napi_has_property(o::NapiValue, key::Cstring)::Bool
+    @napi_call napi_has_named_property(o::NapiValue, key::Cstring)::Bool
 end
 Base.keys(o::ValueTypes) = @with_scope begin
     value(Array, @napi_call napi_get_property_names(o::NapiValue)::NapiValue)

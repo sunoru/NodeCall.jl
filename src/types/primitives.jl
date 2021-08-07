@@ -53,13 +53,13 @@ end
 @wrap_get_value int32 Int32
 @wrap_get_value uint32 UInt32
 
-value(::Type{T}, v::NapiValue) where T <: Number = T(value(FLoat64, v))
+value(::Type{T}, v::NapiValue) where T <: Number = T(value(Float64, v))
 value(::Type{Int64}, v::NapiValue; is_bigint = false) = if is_bigint
     ret = Ref{Int64}()
     _lossless = @napi_call napi_get_value_bigint_int64(v::NapiValue, ret::Ptr{Int64})::Bool
     ret[]
 else
-    @eval value(::Type{Int64}, v::NapiValue) = @napi_call napi_get_value_int64(v::NapiValue)::Int64
+    @napi_call napi_get_value_int64(v::NapiValue)::Int64
 end
 function value(::Type{UInt64}, v::NapiValue)
     ret = Ref{UInt64}()

@@ -8,6 +8,16 @@ using Random
 end
 
 @testset "internals" begin
+    @test JsValue(2) == 2
+    @test JsValue(Bool, node"true"o)
+    struct S end
+    o = node"{}"o
+    @test_throws ErrorException convert(S, o)
+    @test NodeCall.is_array(["a", "b"])
+    @test NodeCall.get_type(123) == NodeCall.NapiTypes.napi_number
+end
+
+@testset "references" begin
     x = rand()
     NodeCall.reference(x)
     ref = NodeCall.reference(x)

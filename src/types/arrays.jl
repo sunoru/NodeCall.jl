@@ -4,6 +4,10 @@ Base.length(v::ValueTypes) = Int(@with_scope begin
         get_array_info(nv, :typedarray).length
     elseif is_arraybuffer(nv)
         get_array_info(nv, :arraybuffer).length
+    elseif is_buffer(nv)
+        get_array_info(nv, :buffer).length
+    elseif is_dataview(nv)
+        get_array_info(nv, :dataview).length
     elseif is_array(nv)
         @napi_call napi_get_array_length(nv::NapiValue)::UInt32
     else
@@ -44,11 +48,6 @@ function get_array_info(arr::NapiValue, array_type=:typedarray)
         )
     end
     NapiTypedArrayInfo(typ[], len[], data[], arraybuffer[], byte_offset[])
-end
-function arraybuffer_info(arr::NapiValue)
-    data = Ref{Ptr{Cvoid}}()
-    byte_length = @napi_call napi_get_arraybuffer_info(arr::NapiValue, data::Ptr{Ptr{Cvoid}})::Csize_t
-    NapiArrayBufferInfo(data[], byte_length)
 end
 
 function _napi_value(v::AbstractArray)

@@ -3,6 +3,8 @@ using IOCapture
 
 @testset "eval" begin
     new_context()
+    @test node"1 == 1"
+    @test value(node"123"o) == 123
     Math = node"Math"
     @test Math isa JsObject
     @test Math.random() isa Float64

@@ -68,4 +68,11 @@ end
     @check_type node"new DataView(new ArrayBuffer(1))" Vector{UInt8}
     # `Promise`
     @check_type node"new Promise(()=>{})" JsPromise
+
+    o = node"{}"o
+    @test value(Rational{Int}, node"0.75"o) == 3//4
+    @test value(String, o) == "[object Object]"
+    @test value(Int, node"123"o) == 123
+    @test value(Int, node"123n"r, is_bigint=true) == 123
+    @test value(UInt, node"123n"o) == UInt(123)
 end
