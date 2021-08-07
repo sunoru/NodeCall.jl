@@ -1,6 +1,8 @@
 include("test_common.jl")
 
 @testset "NodeCall.jl" begin
+    include("executables.jl")
+
     NodeCall.initialize()
 
     include("types.jl")
@@ -12,7 +14,6 @@ include("test_common.jl")
     include("import.jl")
     include("internals.jl")
     include("contexts.jl")
-    include("miscs.jl")
 
     NodeCall.dispose()
 end
