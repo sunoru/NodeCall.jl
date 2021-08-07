@@ -20,7 +20,7 @@ export napi_value, node_value, value
 export create_object, @new
 export set_copy_array
 export set!, instanceof
-export @await, state, result
+export @node_async, @await, state, result
 export node_throw
 include("types/bases.jl")
 include("types/node_values.jl")
@@ -32,9 +32,6 @@ include("types/arrays.jl")
 include("types/functions.jl")
 include("types/externals.jl")
 include("types/promises.jl")
-
-export @node_async
-include("async.jl")
 
 export current_context, new_context, delete_context, switch_context, list_contexts
 include("contexts.jl")

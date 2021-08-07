@@ -31,5 +31,13 @@ using Dates
     end)
     @test_throws NodeError wait(p4)
 
-    @test fetch(@node_async node"true")
+    t = now()
+    jl_task = @async sleep(3)
+    node_sleep = @node_async sleep(1)
+    # `node_sleep` should not block `jl_task`
+    wait(node_sleep)
+    # So should `js_sleep`
+    wait(js_sleep(1000))
+    wait(jl_task)
+    @test now() - t ≤ Millisecond(3500)
 end

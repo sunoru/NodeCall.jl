@@ -49,6 +49,11 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     end
     _GLOBAL_ENV.env = env
     _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
+    ret = @ccall :libjlnode.initialize(
+        _GLOBAL_ENV.loop::Ptr{Cvoid},
+        pointer_from_objref(NodeCall)::Ptr{Cvoid}
+    )::Cint
+    @assert ret == 0
     @debug "Initializing NodeJS..."
     run_script("""(() => {
         globalThis.$(tempvar_name) = {}
@@ -75,8 +80,7 @@ function start_node(args=split(get(ENV, "JLNODE_ARGS", "")))
     initialized() && return
     @debug "Starting NodeJS instance..."
     env = Ref{NapiEnv}()
-    ret = @ccall :libjlnode.initialize(
-        pointer_from_objref(NodeCall)::Ptr{Cvoid},
+    ret = @ccall :libjlnode.start_node(
         jlnode_addon::Cstring,
         args::Ptr{Cstring},
         length(args)::Csize_t,
