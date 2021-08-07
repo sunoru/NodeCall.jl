@@ -32,11 +32,13 @@ end
     NodeCall.dereference(x)
     NodeCall.dereference(pointer(ref))
     @test NodeCall.delete_reference(pointer(ref2))
+    @test !NodeCall.delete_reference(C_NULL)
 end
 
 @testset "internals" begin
     @test JsValue(2) == 2
     @test JsValue(Bool, node"true"o)
+    @test value(value(NodeValueTemp, 1)) == 1
     struct S end
     o = node"{}"o
     @test_throws ErrorException convert(S, o)

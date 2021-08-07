@@ -2,6 +2,8 @@ include("test_common.jl")
 
 @testset "contexts" begin
     NodeCall.clear_context()
+    delete_context()
+    @test !delete_context(nothing)
     ctx1 = current_context()
     ctx2 = new_context(be_current=false)
     node"const f_ctx1 = () => true"
@@ -15,4 +17,7 @@ include("test_common.jl")
     delete_context(ctx1)
     @test_throws NodeError node"f_ctx1()"
     @test node"f_ctx2()" == 1
+    ctx = node"require('vm').createContext()"
+    switch_context(ctx)
+    delete_context()
 end

@@ -18,6 +18,7 @@ end
 NodeObject(value::NapiValue) = NodeObject(
     @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
 )
+value(::Type{NodeObject}, v::NapiValue) = NodeObject(v)
 
 mutable struct NodeValueTemp <: NodeValue
     tempname::String
@@ -33,6 +34,7 @@ NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
     tempvar[tempname] = v
     NodeValueTemp(tempname)
 end
+value(::Type{NodeValueTemp}, v::NapiValue; tempname=nothing) = NodeValueTemp(v, tempname)
 
 node_value_finalizer(v::NodeObject) = if initialized()
     ref = getfield(v, :ref)

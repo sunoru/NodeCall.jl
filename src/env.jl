@@ -38,23 +38,17 @@ function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     # end
 end
 
-function initialize!(env, addon_path, args)
-    env
-end
-
 function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     initialized() && return
     Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL)
     _STARTED_FROM_NODE[] = !isnothing(env)
-    env, loop = if started_from_node()
-        env = reinterpret(NapiEnv, UInt64(env))
-        loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
-        env, loop
+    env = if started_from_node()
+        reinterpret(NapiEnv, UInt64(env))
     else
         start_node(args)
     end
     _GLOBAL_ENV.env = env
-    _GLOBAL_ENV.loop = loop
+    _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
     @debug "Initializing NodeJS..."
     run_script("""(() => {
         globalThis.$(tempvar_name) = {}
@@ -81,17 +75,15 @@ function start_node(args=split(get(ENV, "JLNODE_ARGS", "")))
     initialized() && return
     @debug "Starting NodeJS instance..."
     env = Ref{NapiEnv}()
-    loop = Ref{Ptr{Cvoid}}()
     ret = @ccall :libjlnode.initialize(
         pointer_from_objref(NodeCall)::Ptr{Cvoid},
         jlnode_addon::Cstring,
         args::Ptr{Cstring},
         length(args)::Csize_t,
-        env::Ptr{NapiEnv},
-        loop::Ptr{Ptr{Cvoid}}
+        env::Ptr{NapiEnv}
     )::Cint
     @assert ret == 0
-    env[], loop[]
+    env[]
 end
 
 function __init__()
