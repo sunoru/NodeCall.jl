@@ -40,9 +40,8 @@ export node_env, node_uvloop, run_node_uvloop
 include("env.jl")
 
 export @node_cmd, @npm_cmd, @npx_cmd
-export NPM, NPX
+export NPM, npx
 include("executables/executables.jl")
 include("executables/NPM.jl")
-include("executables/NPX.jl")
 
 end # module

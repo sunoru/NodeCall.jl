@@ -27,3 +27,9 @@ macro npx_cmd(args)
         cmd_gen(jsfile, cmd)
     end)
 end
+
+function npx(args...)
+    cmd = npx``
+    append!(cmd.exec, args)
+    Base.run(cmd)
+end
