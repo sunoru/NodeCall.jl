@@ -8,12 +8,14 @@ using IOCapture
     @test IOCapture.capture() do
         npx("--version")
     end.output |> strip == "6.14.13"
-    IOCapture.capture() do
+    ps = [
+        getproperty(NPM, Symbol(replace(command, '-'=>'_')))("--help"; wait=false)
         for command in NPM.COMMANDS
-            getproperty(NPM, Symbol(replace(command, '-'=>'_')))("--help")
-        end
+    ]
+    wait.(ps)
+    IOCapture.capture() do
+        NPM.init("-y")
     end
-    wait(NPM.init("-y"; wait=false))
     NPM.install("canvas") do p
         wait(p)
     end
