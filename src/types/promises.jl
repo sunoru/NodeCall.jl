@@ -30,8 +30,8 @@ JsPromise(ref::NodeObject) = @with_scope begin
     promise
 end
 
-@global_js_const _JS_CREATE_PROMISE = "(f) => new Promise(f)"
-JsPromise(f::Function) = _JS_CREATE_PROMISE(f)
+@global_js_const _JS_PROMISE = "Promise"
+JsPromise(f::Function) = @new _JS_PROMISE(f)
 
 napi_value(promise::JsPromise) = convert(NapiValue, getfield(promise, :ref))
 value(::Type{JsPromise}, v::NapiValue) = @with_scope JsPromise(NodeObject(v))
