@@ -41,11 +41,13 @@ end
 
 installed_packages(is_global=false) = ls("--depth=0", "--json", is_global ? "--global" : "") do json
     data = JSON.parse(json)
-    data["dependencies"]
+    Base.get(data, "dependencies", Dict{String, Any}())
 end
 
-is_installed_locally(pkg) = pkg in keys(installed_packages(false))
-is_installed_globally(pkg) = pkg in keys(installed_packages(true))
-is_installed(pkg) = is_installed_locally(pkg) || is_installed_globally(pkg)
+is_installed(pkg; is_global=nothing) = if isnothing(is_global)
+    is_installed(pkg; is_global=false) || is_installed(pkg; is_global=true)
+else
+    pkg in keys(installed_packages(is_global))
+end
 
 end

@@ -13,9 +13,10 @@ using IOCapture
             getproperty(NPM, Symbol(replace(command, '-'=>'_')))("--help")
         end
     end
-    close(NPM.init("-y"; wait=false))
-    NPM.install("canvas") do _
+    wait(NPM.init("-y"; wait=false))
+    NPM.install("canvas") do p
+        wait(p)
     end
     @test NPM.is_installed("canvas")
-    @test NPM.is_installed_globally("canvas") isa Bool
+    @test NPM.is_installed("canvas"; is_global=true) isa Bool
 end
