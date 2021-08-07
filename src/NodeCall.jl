@@ -3,7 +3,7 @@ module NodeCall
 using libnode_jll
 using libjlnode_jll
 
-include("types/napi_types.jl")
+include("napi_types.jl")
 using .NapiTypes
 
 include("refs.jl")
@@ -18,6 +18,7 @@ export NapiValue, NodeValue, JsValue, NodeError,
        JsObject, JsIterator, JsFunction, JsPromise
 export napi_value, node_value, value
 export create_object, @new
+export set_copy_array
 export set!, instanceof
 export @await, state, result
 export node_throw
@@ -38,7 +39,10 @@ include("contexts.jl")
 export node_env, node_uvloop, run_node_uvloop
 include("env.jl")
 
-export node, npm, npx
-include("executables.jl")
+export @node_cmd, @npm_cmd, @npx_cmd
+export NPM, NPX
+include("executables/executables.jl")
+include("executables/NPM.jl")
+include("executables/NPX.jl")
 
 end # module

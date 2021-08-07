@@ -26,7 +26,12 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
         recv
     end
     argc = length(args)
+    p_ca = COPY_ARRAY[]
+    if pass_copy
+        COPY_ARRAY[] = true
+    end
     argv = argc == 0 ? C_NULL : NapiValue.(collect(args))
+    COPY_ARRAY[] = p_ca
     @napi_call napi_call_function(
         recv::NapiValue, func::NapiValue, argc::Csize_t, argv::Ptr{NapiValue}
     )::NapiValue

@@ -16,6 +16,11 @@ using Random
     @test buffer == bytes
     @test pointer(buffer) == pointer(arr2)
     @test arr1[1:2] == [5, 512]
+    set_copy_array(true)
+    js_arr = node_value(arr1)
+    @test length(js_arr) == 20
+    js_buffer = get(js_arr, "buffer", convert_result=false)
+    @test length(js_buffer) == 160
 
     delete_context()
 end

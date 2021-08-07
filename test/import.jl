@@ -9,9 +9,9 @@ include("test_common.jl")
     node"const fs = require('fs')"
 
     cd(@__DIR__)
-    isfile("package.json") || run(npm("init", "-y"))
+    isfile("package.json") || run(npm`init -y`)
     # Test with `canvas` that is a npm package with native dependencies.
-    run(npm("install", "canvas"))
+    run(npm`install canvas`)
     canvas_module = require("canvas")
     canvas = canvas_module.createCanvas(10, 10)
     ctx = canvas.getContext("2d")

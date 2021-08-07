@@ -61,8 +61,10 @@ function _napi_value(v::AbstractArray)
 end
 
 arraybuffer_finalizer(ptr) = dereference(ptr)
+const COPY_ARRAY = Ref(false)
+set_copy_array(copy::Bool) = COPY_ARRAY[] = copy
 
-function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=false)
+function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=COPY_ARRAY[])
     isnothing(typedarray_type) && return _napi_value(v)
     T = eltype(v)
     n = length(v)
@@ -85,7 +87,7 @@ end
 
 function napi_value(
     v::TypedCompatibleArray{T};
-    copy_array=false, typedarray_type=nothing
+    copy_array=COPY_ARRAY[], typedarray_type=nothing
 ) where T
     isnothing(typedarray_type) || return _napi_value(v, typedarray_type; copy_array=copy_array)
     _napi_value(v, if T == Int8
