@@ -12,9 +12,9 @@ include("test_common.jl")
     include("functions.jl")
     include("promises.jl")
     include("import.jl")
-    include("external.jl")
-    include("internals.jl")
+    include("externals.jl")
     include("contexts.jl")
+    include("internals.jl")
 
     NodeCall.dispose()
 end

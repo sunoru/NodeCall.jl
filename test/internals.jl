@@ -1,20 +1,26 @@
 include("test_common.jl")
 using Random
 
-@testset "errors" begin
-    @test_throws NodeError node"throw('error')"
-    p = node"(async () => { throw('async error') })()"
-    @test_throws String wait(p)
-end
+new_context()
 
-@testset "internals" begin
-    @test JsValue(2) == 2
-    @test JsValue(Bool, node"true"o)
-    struct S end
-    o = node"{}"o
-    @test_throws ErrorException convert(S, o)
-    @test NodeCall.is_array(["a", "b"])
-    @test NodeCall.get_type(123) == NodeCall.NapiTypes.napi_number
+@testset "errors" begin
+    @test_throws NodeError node"x"
+    p = node"(async () => { throw('async error') })()"
+    @test_throws NodeError wait(p)
+    err = try
+        node"throw('error')"
+    catch e
+        e
+    end
+    @test startswith(sprint(show, err), "NodeError(")
+    @test startswith(sprint(showerror, err), "NodeError:")
+    @test_throws NodeError begin
+        node_throw("error")
+        NodeCall.throw_error()
+    end
+    @test_throws NodeError node"f=>f()"() do
+        error("error")
+    end
 end
 
 @testset "references" begin
@@ -26,4 +32,21 @@ end
     NodeCall.dereference(x)
     NodeCall.dereference(pointer(ref))
     @test NodeCall.delete_reference(pointer(ref2))
+end
+
+@testset "internals" begin
+    @test JsValue(2) == 2
+    @test JsValue(Bool, node"true"o)
+    struct S end
+    o = node"{}"o
+    @test_throws ErrorException convert(S, o)
+    @test NodeCall.is_array(["a", "b"])
+    @test NodeCall.get_type(123) == NodeCall.NapiTypes.napi_number
+    o2 = node"1"o
+    @test startswith(sprint(show, o), "NodeObject:")
+    @test startswith(sprint(show, o2), "NodeValueTemp:")
+    o = nothing
+    o2 = nothing
+    GC.gc()
+    NodeCall.dispose()
 end

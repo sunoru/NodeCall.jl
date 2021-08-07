@@ -37,19 +37,12 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
     )::NapiValue
 end
 
-function get_callback_info(env::NapiEnv, info::NapiPointer, argc = 6)
-    argv = Vector{NapiValue}(undef, argc)
-    argc = Ref(argc)
-    this = Ref{NapiValue}
-    data = @napi_call env napi_get_cb_info(
-        info::NapiPointer,
-        argc::Ptr{Csize_t}, argv::Ptr{NapiValue},
-        this::Ptr{NapiValue}
-    )::NapiPointer
-    NapiCallbackInfo(argc[], argv, this[], data)
-end
-
-function call_function(func_ptr::Ptr{Cvoid}, args_ptr::Ptr{Cvoid}, argc::Csize_t, _recv::Ptr{Cvoid})
+function call_function(
+    func_ptr::Ptr{Cvoid},
+    args_ptr::Ptr{Cvoid},
+    argc::Csize_t,
+    _recv::Ptr{Cvoid}
+)
     func = get_reference(func_ptr)
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]

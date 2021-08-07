@@ -15,7 +15,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
     setfield!(promise, :state, state)
     setfield!(promise, :result, result)
     if state == promise_rejected
-        _JS_MAKE_PROMISE(promise, _ -> nothing, _ -> nothing; raw=true)
+        _JS_WRAP_PROMISE(promise, _ -> nothing, _ -> nothing; raw=true)
     elseif state == promise_pending
         resolve = (x) -> begin
             setfield!(promise, :state, promise_fulfilled)
@@ -25,24 +25,16 @@ JsPromise(ref::NodeObject) = @with_scope begin
             setfield!(promise, :state, promise_rejected)
             setfield!(promise, :result, x);
         end
-        _JS_MAKE_PROMISE(promise, resolve, reject; raw=true)
+        _JS_WRAP_PROMISE(promise, resolve, reject; raw=true)
     end
     promise
 end
 
-promise_resolve(deferred) = (x) -> @with_scope begin
-    @napi_call napi_resolve_deferred(deferred::NapiDeferred, x::NapiValue)
-end
-promise_reject(deferred) = (x) -> @with_scope begin
-    @napi_call napi_reject_deferred(deferred::NapiDeferred, x::NapiValue)
-end
-
-JsPromise(f::Function) = @with_scope begin
-    nv = Ref{NapiValue}()
-    deferred = @napi_call napi_create_promise(nv::Ptr{NapiValue})::NapiDeferred
-    @async f((promise_resolve(deferred), promise_reject(deferred)))
-    JsPromise(NodeObject(nv))
-end
+@global_js_const _JS_CREATE_PROMISE = """(f) => new Promise((resolve, reject) => {
+    f(resolve, reject)
+})"""
+# FIXME: make it work.
+JsPromise(f::Function) = _JS_CREATE_PROMISE(f)
 
 napi_value(promise::JsPromise) = convert(NapiValue, getfield(promise, :ref))
 value(::Type{JsPromise}, v::NapiValue) = @with_scope JsPromise(NodeObject(v))
@@ -63,7 +55,7 @@ function promise_state(
     state[], result
 end
 
-@global_js_const _JS_MAKE_PROMISE = """(promise, resolve, reject) => {
+@global_js_const _JS_WRAP_PROMISE = """(promise, resolve, reject) => {
     const p = promise
         .then(resolve).catch(reject)
     setTimeout(() => {}, 0)
@@ -86,9 +78,7 @@ Base.fetch(
         return result(promise)
     elseif s == promise_rejected
         err = result(promise)
-        if err isa JsObject
-            err = NodeError(node_value(err))
-        end
+        err = NodeError(node_value(err))
         throw(err)
     end
 end

@@ -23,7 +23,7 @@ end
     @test node"x => typeof x === 'number'"(0)
     # `string`
     @test node"'a string'" ≡ "a string"
-    @test node"x => typeof x === 'string'"("str")
+    @test node"x => typeof x === 'string'".(["str", 'c']) |> all
     # `bigint`
     @test node"282278710948156123453635394322245338923n" == 282278710948156123453635394322245338923
     @test node"x => typeof x === 'bigint'"(BigInt(0))

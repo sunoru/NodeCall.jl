@@ -7,7 +7,7 @@ using Dates
     Object = node"Object"
     node"const a = new Object()"
     a = node"a"
-    b = @new Object()
+    b = @new Object
     b.a = node"a"
     @test b.a == node"a"
     @test node"(b) => b.a === a"(b)
@@ -37,6 +37,7 @@ using Dates
 
     str_dict = Dict("k"=>false, "p"=>123)
     any_dict = Dict(false=>false, 123=>456)
+    @test "k" ∈ node_value(str_dict)
     @test Object.keys(str_dict) == ["k", "p"]
     @test Object.keys(any_dict) == ["false", "123"]
     js_map = node"""(() => {
@@ -69,6 +70,7 @@ using Dates
     @test tuple3 == ["a", "b", 123]
 
     named_tuple = (x=1, y=true, z="z")
+    @test Object.keys(named_tuple) == ["x", "y", "z"]
     named_tuple2 = node"""(nt) => {
         assert(nt.x === 1 && nt.y && nt.z === 'z')
         nt.x = 5
@@ -80,6 +82,7 @@ using Dates
         return nt
     }"""(named_tuple)
     @test named_tuple3 isa JsObject
+    @test "x" in named_tuple3
     @test NamedTuple(named_tuple3) ≡ (x="t", y=true, z="z")
 
     struct Foo
@@ -92,6 +95,7 @@ using Dates
     foo_m = FooM("before")
     node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
     @test foo_m.x == "after"
+    @test node"(foo) => 'x' in foo && foo.x === 'after'"(foo_m)
 
     @test length(node"{length: 5}") == 5
 

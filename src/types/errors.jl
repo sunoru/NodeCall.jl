@@ -1,7 +1,7 @@
-struct NodeError <: NodeValue
-    o::NodeObject
+struct NodeError{T <: NodeValue} <: NodeValue
+    o::T
 end
-NodeError(value::NapiValue) = NodeError(NodeObject(value))
+NodeError(value::NapiValue) = NodeError(node_value(value))
 
 function Base.show(io::IO, v::NodeError)
     print(io, "NodeError(")
@@ -11,6 +11,10 @@ end
 function Base.showerror(io::IO, v::NodeError)
     print(io, "NodeError: ")
     print(io, v.message)
+end
+function Base.showerror(io::IO, v::NodeError{NodeValueTemp})
+    print(io, "NodeError: ")
+    print(io, value(v))
 end
 napi_value(node_error::NodeError) = napi_value(getfield(node_error, :o))
 

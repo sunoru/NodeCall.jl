@@ -125,6 +125,7 @@ Base.setindex!(o::ValueTypes, value, key) = set!(o, key, value)
 
 _convert_key(::AbstractDict{T}, k::T) where T = k
 _convert_key(::AbstractDict{String}, k) = string(k)
+_convert_key(::AbstractDict{String}, k::String) = k
 _convert_key(::AbstractDict{T}, k::AbstractString) where T <: Number = T(
     if isconcretetype(T)
         parse(T, k)

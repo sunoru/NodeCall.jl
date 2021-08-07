@@ -23,14 +23,14 @@ export set!, instanceof
 export @await, state, result
 export node_throw
 include("types/bases.jl")
-include("types/node_value.jl")
+include("types/node_values.jl")
 include("types/errors.jl")
 include("types/common.jl")
 include("types/primitives.jl")
 include("types/objects.jl")
 include("types/arrays.jl")
 include("types/functions.jl")
-include("types/external.jl")
+include("types/externals.jl")
 include("types/promises.jl")
 
 export current_context, new_context, delete_context, switch_context, list_contexts

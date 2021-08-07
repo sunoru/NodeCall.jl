@@ -1,8 +1,9 @@
 include("test_common.jl")
-using IOCapture
+using Suppressor
 
 @testset "eval" begin
     new_context()
+
     @test node"1 == 1"
     @test value(node"123"o) == 123
     Math = node"Math"
@@ -12,9 +13,7 @@ using IOCapture
     @test node"const b = 1" ≡ nothing
     @test node"let c = {}" ≡ nothing
     @test node"b" == 1
-    captured = IOCapture.capture() do
-        node"console".log("logging to stdout")
-    end
-    @test captured.output == "logging to stdout\n"
+    @test "logging to stdout\n" == @capture_out node"console".log("logging to stdout")
+
     delete_context()
 end

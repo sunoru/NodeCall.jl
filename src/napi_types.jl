@@ -143,11 +143,4 @@ Base.@kwdef struct NapiPropertyDescriptor
     data::NapiPointer = C_NULL
 end
 
-struct NapiCallbackInfo
-    argc::Csize_t
-    argv::Vector{NapiValue}
-    this::NapiValue
-    data::NapiPointer
-end
-
 end
