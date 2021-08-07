@@ -30,10 +30,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
     promise
 end
 
-@global_js_const _JS_CREATE_PROMISE = """(f) => new Promise((resolve, reject) => {
-    f(resolve, reject)
-})"""
-# FIXME: make it work.
+@global_js_const _JS_CREATE_PROMISE = "(f) => new Promise(f)"
 JsPromise(f::Function) = _JS_CREATE_PROMISE(f)
 
 napi_value(promise::JsPromise) = convert(NapiValue, getfield(promise, :ref))

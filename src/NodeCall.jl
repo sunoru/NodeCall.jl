@@ -33,6 +33,9 @@ include("types/functions.jl")
 include("types/externals.jl")
 include("types/promises.jl")
 
+export @node_async
+include("async.jl")
+
 export current_context, new_context, delete_context, switch_context, list_contexts
 include("contexts.jl")
 

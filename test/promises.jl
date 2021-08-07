@@ -26,8 +26,10 @@ using Dates
         resolve(true)
     end
     @test @await p3
-    p4 = JsPromise() do _, reject
+    p4 = JsPromise((_, reject) -> begin
         reject(123)
-    end
+    end)
     @test_throws NodeError wait(p4)
+
+    @test fetch(@node_async node"true")
 end
