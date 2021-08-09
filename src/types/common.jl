@@ -29,7 +29,7 @@ is_map(v::NapiValue) = instanceof(v, _JS_MAP)
 @global_js_const _JS_SET = "Set"
 is_set(v::NapiValue) = instanceof(v, _JS_SET)
 @global_js_const _JS_ITERATOR_SYMBOL = "Symbol.iterator" false
-is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL, nothing; raw=true))
+is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL, nothing; result=RESULT_RAW))
 
 for func in (
     :get_type,
@@ -61,9 +61,9 @@ Base.show(io::IO, v::JsObjectType) = print(io, string(
 
 function Base.get(
     o::ValueTypes, key, default=nothing;
-    raw=false, convert_result=true
+    result=RESULT_VALUE
 )
-    with_result(raw, convert_result, this=o) do
+    with_result(result, this=o) do
         nv = @napi_call napi_get_property(o::NapiValue, key::NapiValue)::NapiValue
         is_undefined(nv) && return default
         nv
@@ -82,8 +82,8 @@ Base.in(key, o::ValueTypes) = haskey(o, key)
 
 Base.get(
     o::ValueTypes, key::AbstractString, default=nothing;
-    raw=false, convert_result=true
-) = with_result(raw, convert_result, this=o) do
+    result=RESULT_VALUE
+) = with_result(result, this=o) do
     nv = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
     is_undefined(nv) && return default
     nv
@@ -100,8 +100,8 @@ end
 
 Base.get(
     o::ValueTypes, key::Integer, default=nothing;
-    raw=false, convert_result=true
-) = with_result(raw, convert_result, this=o) do
+    result=RESULT_VALUE
+) = with_result(result, this=o) do
     nv = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
     is_undefined(nv) && return default
     nv

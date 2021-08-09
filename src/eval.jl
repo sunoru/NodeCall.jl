@@ -1,36 +1,43 @@
-function with_result(f, raw::Bool, convert_result::Bool; this=nothing)
-    scope = raw ? nothing : open_scope()
+"""
+    ResultType
+"""
+@enum ResultType begin
+    RESULT_RAW = 0
+    RESULT_NODE
+    RESULT_VALUE
+end
+function with_result(f, type::ResultType=RESULT_VALUE; this=nothing)
+    scope = type == RESULT_RAW ? nothing : open_scope()
     result = f()
-    ret = if raw
+    ret = if type == RESULT_RAW
         isnothing(result) ? get_undefined() : result
-    elseif convert_result
-        value(result; this=this)
-    else
+    elseif type == RESULT_NODE
         node_value(result)
+    else
+        value(result; this=this)
     end
     close_scope(scope)
     ret
 end
 
 """
-    run_script(script; context=current_context(), raw=false, convert_result=true)
+    run_script(script; context=current_context(), result=RESULT_VALUE)
 
 Evaluate the given JavaScript script in a given `context`. If `context` is `nothing`,
 the script will be run in the global scope.
 
-If `raw` is set `true`, the raw `napi_value` will be returned.
+If `result` is set `RESULT_RAW`, the raw `napi_value` will be returned.
 Note that it is only available inside current `napi_handle_scope`.
 Thus, if you did't open one, the `napi_value` would remain in the global
 `napi_handle_scope`.
 
-If `convert_result` is `true` (which is the default), the result will be converted to
+If `result` is `RESULT_VALUE` (which is the default), the result will be converted to
 the most suitable Julia type before being returned.
 """
 function run_script(
-    script::AbstractString;
+    script::AbstractString,
+    result=RESULT_VALUE;
     context = current_context(),
-    raw = false,
-    convert_result = true
 )
     script = strip(script)
     script = if startswith(script, '{')
@@ -39,14 +46,13 @@ function run_script(
         script
     end
     if isnothing(context)
-        with_result(raw, convert_result) do
+        with_result(result) do
             @napi_call napi_run_script(script::NapiValue)::NapiValue
         end
     else
         _VM.runInContext(
             script, context;
-            raw=raw,
-            convert_result=convert_result
+            result=result
         )
     end
 end
@@ -64,14 +70,18 @@ You can also use `r` option to keep the raw return value as `napi_value`.
 See docs for `run_script` for details.
 """
 macro node_str(code, options...)
-    raw, convert_result = if length(options) == 1
-        'r' ∈ options[1], 'o' ∉ options[1]
+    result = if length(options) == 1
+        if 'r' ∈ options[1]
+            RESULT_RAW
+        elseif 'o' ∈ options[1]
+            RESULT_NODE
+        else
+            RESULT_VALUE
+        end
     else
-        false, true
+        RESULT_VALUE
     end
-    quote
-        run_script($code; raw=$raw, convert_result=$convert_result)
-    end
+    :(run_script($code, $result))
 end
 
 require(id::AbstractString) = run_script("globalThis.require('$(id)')")

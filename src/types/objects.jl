@@ -19,8 +19,8 @@ end
 
 create_object(
     constructor=nothing, args=nothing;
-    raw=false, convert_result=true
-) = with_result(raw, convert_result) do
+    result=RESULT_VALUE
+) = with_result(result) do
     argv = isnothing(args) ? C_NULL : NapiValue.(collect(args))
     argc = isnothing(args) ? 0 : length(args)
     if isnothing(constructor)
@@ -36,8 +36,8 @@ end
 
 create_object(
     properties::AbstractArray{NapiPropertyDescriptor};
-    raw=false, convert_result=true
-) = with_result(raw, convert_result) do
+    result=RESULT_VALUE
+) = with_result(result) do
     nv = @napi_call napi_create_object()::NapiValue
     define_properties!(nv, properties)
     nv
@@ -91,7 +91,7 @@ end
 })()"""
 create_object_dict(x::AbstractDict) = create_object_mutable(x)
 function create_object_set(x::AbstractSet)
-    m = run_script("new Set()", raw=true)
+    m = run_script("new Set()", RESULT_RAW)
     for v in x
         m.add(v)
     end
@@ -104,10 +104,10 @@ function create_object_mutable(x)
         ref::Ptr{Cvoid}
     )::NapiValue
     add_finalizer!(v, dereference, ref)
-    _JS_OBJECT_PROXY(v; raw=true)
+    _JS_OBJECT_PROXY(v; result=RESULT_RAW)
 end
 function create_object_immutable(x::T) where T
-    nv = create_object(raw=true)
+    nv = create_object(result=RESULT_RAW)
     for k in fieldnames(T)
         nv[string(k)] = getfield(x, k)
     end

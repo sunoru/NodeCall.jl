@@ -58,7 +58,7 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     run_script("""(() => {
         globalThis.$(tempvar_name) = {}
         globalThis.assert = require('assert').strict
-    })()""", raw=true, context=nothing)
+    })()""", RESULT_RAW, context=nothing)
     _initialize_types()
     new_context()
     Random.seed!(_GLOBAL_RNG)

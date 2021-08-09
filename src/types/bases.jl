@@ -77,7 +77,7 @@ end
 
 _initialize_types() = @with_scope begin
     for (ref, script) in ObjectReference[:global_init][]
-        nv = run_script(script, raw=true, context=nothing)
+        nv = run_script(script, RESULT_RAW)
         if ref isa NodeObject
             v = @napi_call napi_create_reference(nv::NapiValue, 1::UInt32)::NapiRef
             setfield!(ref, :ref, v)

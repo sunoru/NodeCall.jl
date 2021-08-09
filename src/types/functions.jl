@@ -9,9 +9,9 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
 (func::ValueTypes)(
     args...;
     recv=nothing, pass_copy=false,
-    raw=false, convert_result=true,
+    result=RESULT_VALUE,
     context=current_context()
-) = with_result(raw, convert_result) do
+) = with_result(result) do
     if pass_copy
         args = deepcopy.(args)
     end
@@ -65,11 +65,11 @@ end
 # Iterators
 # napi_value(v::AbstractIterator)
 value(::Type{JsIterator}, v::NapiValue) = JsIterator(NodeObject(v))
-function Base.iterate(v::NapiValue, state = nothing; raw=false, convert_result=true)
-    iterator = isnothing(state) ? v[_JS_ITERATOR_SYMBOL]() : state
-    state = iterator.next(raw=true)
+function Base.iterate(v::NapiValue, state = nothing; result=RESULT_VALUE)
+    iterator = isnothing(state) ? v[_JS_ITERATOR_SYMBOL](result=result) : state
+    state = iterator.next(result=result)
     state.done && return nothing
-    result = get(state, "value", nothing; raw=raw, convert_result=convert_result)
-    result, iterator
+    ret = get(state, "value", nothing; result=result)
+    ret, iterator
 end
 Base.iterate(v::ValueTypes, state = nothing) = @with_scope iterate(NapiValue(v), state)

@@ -9,6 +9,7 @@ using .NapiTypes
 include("refs.jl")
 include("utils.jl")
 
+export RESULT_RAW, RESULT_NODE, RESULT_VALUE
 export run_script, @node_str, require
 include("eval.jl")
 

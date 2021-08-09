@@ -3,7 +3,7 @@ import UUIDs: uuid4
 const tempvar_name = "__jlnode_tmp"
 
 get_tempvar(tempname=nothing) = @with_scope begin
-    temp = get(get_global(nothing), tempvar_name; convert_result=false)
+    temp = get(get_global(nothing), tempvar_name; result=RESULT_RAW)
     isnothing(tempname) ? temp : temp[tempname]
 end
 

@@ -15,7 +15,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
     setfield!(promise, :state, state)
     setfield!(promise, :result, result)
     if state == promise_rejected
-        _JS_WRAP_PROMISE(promise, _ -> nothing, _ -> nothing; raw=true)
+        _JS_WRAP_PROMISE(promise, _ -> nothing, _ -> nothing; result=RESULT_RAW)
     elseif state == promise_pending
         resolve = (x) -> begin
             setfield!(promise, :state, promise_fulfilled)
@@ -25,7 +25,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
             setfield!(promise, :state, promise_rejected)
             setfield!(promise, :result, x);
         end
-        _JS_WRAP_PROMISE(promise, resolve, reject; raw=true)
+        _JS_WRAP_PROMISE(promise, resolve, reject; result=RESULT_RAW)
     end
     promise
 end
@@ -43,13 +43,13 @@ result(promise::ValueTypes) = promise_state(promise)[2]
 
 function promise_state(
     promise::ValueTypes;
-    raw=false, convert_result=true
+    result=RESULT_VALUE
 )
     state = Ref{PromiseState}()
-    result = with_result(raw, convert_result) do
+    result_ = with_result(result) do
         @napi_call get_promise_state(promise::NapiValue, state::Ptr{PromiseState})::NapiValue
     end
-    state[], result
+    state[], result_
 end
 
 @global_js_const _JS_WRAP_PROMISE = """(promise, resolve, reject) => {
@@ -60,8 +60,8 @@ end
 }"""
 Base.fetch(
     promise::ValueTypes;
-    raw=false, convert_result=true
-) = with_result(raw, convert_result) do
+    result=RESULT_VALUE
+) = with_result(result) do
     nv = NapiValue(promise)
     is_promise(nv) || return nv
     promise = value(JsPromise, nv)
@@ -72,9 +72,9 @@ Base.fetch(
         s = state(promise)
     end
     if s == promise_fulfilled
-        return result(promise)
+        return getfield(promise, :result)
     elseif s == promise_rejected
-        err = result(promise)
+        err = getfield(promise, :result)
         err = NodeError(node_value(err))
         throw(err)
     end

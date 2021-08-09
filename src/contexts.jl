@@ -52,11 +52,11 @@ new_context(context_object=nothing; add_defaults=true, be_current=true) = @with_
         context_object = create_object()
     end
     if add_defaults
-        context_object = _ASSIGN_DEFAULTS(context_object; raw=true)
+        context_object = _ASSIGN_DEFAULTS(context_object; result=RESULT_RAW)
     end
     context = _VM.createContext(
         context_object;
-        convert_result=false
+        result=RESULT_NODE
     )
     push!(NodeContexts, context)
     if be_current

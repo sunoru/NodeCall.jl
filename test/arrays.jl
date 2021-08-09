@@ -25,7 +25,7 @@ using Random
     arr3 = Array(js_arr)
     set_copy_array(false)
     @test pointer(arr1) != pointer(arr3)
-    js_arraybuffer = get(js_arr, "buffer", convert_result=false)
+    js_arraybuffer = get(js_arr, "buffer", result=RESULT_NODE)
     @test length(js_arraybuffer) == 160
     dataview = @new node"DataView"(js_arraybuffer)
     @test length(dataview) == 160

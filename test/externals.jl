@@ -8,7 +8,7 @@ using Random
     o = @new node"Object"()
     o.x = NodeExternal(x)
     @test o.x ≡ x
-    ox = get(o, "x", convert_result=false)
+    ox = get(o, "x", result=RESULT_NODE)
     @test sprint(show, ox) == "NodeExternal: Base.RefValue{Int64}(123)"
     @test node_value(ox) ≡ ox
 
