@@ -21,16 +21,16 @@ macro napi_call(env, sym)
     else
         quote end
     end
-    insert!(func.args, 2, :($env::NapiEnv))
+    insert!(func.args, 2, :($env::NodeCall.NapiEnv))
     fname = func.args[1]
     func.args[1] = :(:libjlnode.x)
     func.args[1].args[2] = QuoteNode(fname)
     esc(quote
         $define_vars
-        $status = @ccall $func::NapiStatus
-        if $status != NapiTypes.napi_ok
+        $status = @ccall $func::NodeCall.NapiStatus
+        if $status != NodeCall.NapiTypes.napi_ok
             @debug $status
-            throw_error($env)
+            NodeCall.throw_error($env)
         end
         $result[]
     end)
@@ -54,7 +54,6 @@ function throw_error(env::NapiEnv = node_env())
             error_info.error_message == C_NULL ? "Error in native callback" : error_info.error_message
         )
         if error_info.error_code ∈ (
-            NapiTypes.napi_object_expected,
             NapiTypes.napi_object_expected,
             NapiTypes.napi_string_expected,
             NapiTypes.napi_boolean_expected,

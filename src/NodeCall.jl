@@ -8,6 +8,8 @@ using .NapiTypes
 
 include("refs.jl")
 include("utils.jl")
+include("types/bases.jl")
+include("types/node_values.jl")
 
 export RESULT_RAW, RESULT_NODE, RESULT_VALUE
 export run_script, @node_str, require
@@ -23,8 +25,6 @@ export set_copy_array
 export set!, instanceof
 export @node_async, @await, state, result
 export node_throw
-include("types/bases.jl")
-include("types/node_values.jl")
 include("types/errors.jl")
 include("types/common.jl")
 include("types/primitives.jl")

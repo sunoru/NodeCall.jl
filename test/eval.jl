@@ -14,6 +14,19 @@ using Suppressor
     @test node"let c = {}" ≡ nothing
     @test node"b" == 1
     @test "logging to stdout\n" == @capture_out node"console".log("logging to stdout")
+    x = 5
+    @test node"const x = $x" ≡ nothing
+    @test node"const \$ = 1" ≡ nothing
+    @test node"\$" == 1
+    x = 2x
+    @test node"$(x)" == 10
+    @test node"'$x'" == raw"$x"
+    @test node"`$x`" == raw"$x"
+    @test node"`${x}`" == "5"
+    @test node"`${$x}`" == "10"
+    y = "x"
+    @test node"$y" == "x"
+    @test node"$$y" == 5
 
     delete_context()
 end

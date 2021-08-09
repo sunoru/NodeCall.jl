@@ -75,7 +75,7 @@ macro global_js_const(def, is_object=true)
     end)
 end
 
-_initialize_types() = @with_scope begin
+_initialize_globals() = @with_scope begin
     for (ref, script) in ObjectReference[:global_init][]
         nv = run_script(script, RESULT_RAW)
         if ref isa NodeObject

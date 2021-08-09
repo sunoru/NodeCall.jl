@@ -56,10 +56,10 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     @assert ret == 0
     @debug "Initializing NodeJS..."
     run_script("""(() => {
-        globalThis.$(tempvar_name) = {}
+        globalThis.$(TEMPVAR_NAME) = {}
         globalThis.assert = require('assert').strict
     })()""", RESULT_RAW, context=nothing)
-    _initialize_types()
+    _initialize_globals()
     new_context()
     Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true
