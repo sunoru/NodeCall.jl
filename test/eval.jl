@@ -10,8 +10,8 @@ using Suppressor
     @test Math isa JsObject
     @test Math.random() isa Float64
     @test node"a = true"
-    @test node"const b = 1" ≡ nothing
-    @test node"let c = {}" ≡ nothing
+    @test node"const b = 1"r isa NapiValue
+    @test node"let c = {}"g ≡ nothing
     @test node"b" == 1
     @test "logging to stdout\n" == @capture_out node"console".log("logging to stdout")
     x = 5
@@ -27,6 +27,8 @@ using Suppressor
     y = "x"
     @test node"$y" == "x"
     @test node"$$y" == 5
+    @test_throws NodeError node"() => $x"()
+    @test node"() => $x"k() == 10
 
     delete_context()
 end
