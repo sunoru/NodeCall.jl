@@ -38,16 +38,17 @@ And JavaScript code can be run with `run_script` or `@node_str` (they are equiva
 ```julia
 julia> using NodeCall
 
-julia> run_script("123 * 456")
-56088.0
-
-julia> node"console.log('Hello, world!')"
+julia> run_script("console.log('Hello, world!')")
 Hello, world!
+
+julia> x = 5
+julia> node"2 * $x"
+10.0
 ```
 
 To install a NPM package, use something like this:
 ```julia
-julia> run(npm("install", "boxen"));
+julia> NPM.install("boxen");
 + boxen@5.0.1
 added 19 packages from 3 contributors and audited 26 packages in 0.782s
 
