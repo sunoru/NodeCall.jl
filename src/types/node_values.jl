@@ -18,6 +18,8 @@ end
 NodeObject(value::NapiValue) = NodeObject(
     @napi_call napi_create_reference(value::NapiValue, 1::UInt32)::NapiRef
 )
+inc_ref(no::NodeObject) = @napi_call napi_reference_ref(getfield(no, :ref)::NapiRef)::UInt32
+dec_ref(no::NodeObject) = @napi_call napi_reference_unref(getfield(no, :ref)::NapiRef)::UInt32
 value(::Type{NodeObject}, v::NapiValue) = NodeObject(v)
 
 mutable struct NodeValueTemp <: NodeValue

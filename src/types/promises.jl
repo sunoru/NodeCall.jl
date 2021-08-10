@@ -83,7 +83,7 @@ end
 Base.wait(promise::ValueTypes) = (fetch(promise); nothing)
 
 macro await(expr)
-    esc(:(fetch($expr)))
+    :(Base.fetch($(esc(expr))))
 end
 
 @global_js_const _JS_MAKE_ASYNC = "(f) => new Promise((resolve, reject) => {

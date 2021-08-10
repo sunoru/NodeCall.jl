@@ -28,7 +28,7 @@ using Suppressor
     @test node"$y" == "x"
     @test node"$$y" == 5
     @test_throws NodeError node"() => $x"()
-    @test node"() => $x"k() == 10
+    @test node"() => $x"f() == 10
 
     delete_context()
 end

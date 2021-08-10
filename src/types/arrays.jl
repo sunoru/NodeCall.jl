@@ -115,6 +115,28 @@ function napi_value(
 end
 napi_value(v::AbstractArray) = _napi_value(v, nothing)
 
+const UnsafelyWrapped = Dict{Ptr{Cvoid}, NodeObject}()
+array_finalizer(arr) = if initialized()
+    ptr = Ptr{Cvoid}(pointer(arr))
+    if ptr in keys(UnsafelyWrapped)
+        ref = UnsafelyWrapped[ptr]
+        if dec_ref(ref) == 0
+            deleteat!(UnsafelyWrapped, ptr)
+        end
+    end
+end
+function unsafe_wrap_array(nv::NapiValue, ::Type{T}, data::Ptr, len) where T
+    data = Ptr{Cvoid}(data)
+    ref = if data in keys(UnsafelyWrapped)
+        ref = UnsafelyWrapped[data]
+        inc_ref(ref)
+        ref
+    else
+        NodeObject(nv)
+    end
+    arr = unsafe_wrap(Array{T}, Ptr{T}(data), len)
+    finalizer(array_finalizer, arr)
+end
 Base.Array(v::ValueTypes) = value(Array, v)
 value(::Type{T}, v::NapiValue) where T <: AbstractArray = T(value(Array, v))
 value(
@@ -145,16 +167,16 @@ value(
     else
         UInt8 # should not be here
     end
-    unsafe_wrap(Array{T}, Ptr{T}(info.data), info.length)
+    unsafe_wrap_array(v, T, info.data, info.length)
 elseif array_type == :arraybuffer || isnothing(array_type) && is_arraybuffer(v)
     info = get_array_info(v, :arraybuffer)
-    unsafe_wrap(Array{UInt8}, info.data, info.length)
+    unsafe_wrap_array(v, UInt8, info.data, info.length)
 elseif array_type == :buffer || isnothing(array_type) && is_buffer(v)
     info = get_array_info(v, :buffer)
-    unsafe_wrap(Array{UInt8}, info.data, info.length)
+    unsafe_wrap_array(v, UInt8, info.data, info.length)
 elseif array_type == :dataview || isnothing(array_type) && is_dataview(v)
     info = get_array_info(v, :dataview)
-    unsafe_wrap(Array{UInt8}, Ptr{UInt8}(info.data), info.length)
+    unsafe_wrap_array(v, UInt8, info.data, info.length)
 else
     len = length(v)
     [v[i] for i in 0:len-1]

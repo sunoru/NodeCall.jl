@@ -180,7 +180,7 @@ Available `options`:
 - `r`: Keep the result in the raw `NapiValue`.
 - `o`: Do not try to convert the result into Julia values.
 - `g`: Run the script in the global scope (instead of in a `vm.Context`).
-- `k`: Do not delete locals after running (for the interpolated variables).
+- `f`: Do not delete locals after running (for the interpolated variables).
 
 See docs for `run_script` for details.
 """
@@ -193,7 +193,7 @@ macro node_str(code, options...)
             RESULT_NODE
         else
             RESULT_VALUE
-        end, 'g' ∈ o, 'k' ∈ o
+        end, 'g' ∈ o, 'f' ∈ o
     else
         RESULT_VALUE, false, false
     end
