@@ -1,4 +1,5 @@
 import Dates: DateTime, unix2datetime, datetime2unix
+import JSON
 
 struct JsObject <: JsObjectType
     ref::NodeObject
@@ -219,13 +220,18 @@ value(::Type{T}, v::NapiValue) where T <: AbstractDict = let dict = value(Dict, 
     try return T(dict) catch end
     dict
 end
-value(::Type{Dict}, v::NapiValue) = @with_scope is_map(v) ? make_dict(v) : Dict(key => v[key] for key in keys(v))
+_dict_value(nv::NapiValue, depth=1) = Dict(
+    key => let v = nv[key]
+         depth != 0 && v isa JsObject ? _dict_value(napi_value(v), depth-1) : v
+    end for key in keys(nv)
+)
+value(::Type{Dict}, nv::NapiValue; depth=1) = @with_scope is_map(nv) ? make_dict(nv) : _dict_value(nv, depth)
 value(::Type{T}, v::NapiValue) where T <: AbstractSet = let set = value(Set, v)
     try return T(set) catch end
     set
 end
 value(::Type{Set}, v::NapiValue) = @with_scope is_set(v) ? make_set(v) : Set(keys(v))
-Base.Dict(v::ValueTypes) = value(Dict, v)
+Base.Dict(v::ValueTypes; depth=2) = @with_scope _dict_value(napi_value(v), depth)
 Base.Set(v::ValueTypes) = value(Set, v)
 
 @global_js_const _MAKE_DICT = """(v) => {
@@ -288,3 +294,5 @@ macro new(expr)
     end
     esc(:(create_object($constructor, $args)))
 end
+
+JSON.lower(x::ValueTypes) = Dict(x, depth=0)

@@ -119,7 +119,7 @@ end
 Base.getproperty(o::ValueTypes, key::Symbol) = get(o, string(key))
 Base.setproperty!(o::ValueTypes, key::Symbol, value) = set!(o, string(key), value)
 Base.hasproperty(o::ValueTypes, key::Symbol) = haskey(o, string(key))
-Base.propertynames(o::ValueTypes) = Symbol.(keys(o))
+Base.propertynames(o::ValueTypes) = Tuple(Symbol.(keys(o)))
 Base.getindex(o::ValueTypes, key) = get(o, key)
 Base.setindex!(o::ValueTypes, value, key) = set!(o, key, value)
 
