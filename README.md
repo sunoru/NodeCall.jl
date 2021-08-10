@@ -33,7 +33,8 @@ With `using NodeCall`, a NodeJS instance will start in the current process. A ne
 ([`vm`](https://nodejs.org/docs/latest-v14.x/api/vm.html) in the standard library of NodeJS)
 is automatically created.
 
-And JavaScript code can be run with `run_script` or `@node_str` (they are equivalent):
+And JavaScript code can be run with `run_script` or `@node_str`
+(they are equivalent except the latter supports interpolation):
 
 ```julia
 julia> using NodeCall
@@ -95,6 +96,12 @@ One important problem of `NodeCall.jl` is that it cannot work with Julia's
 multi-thread/process functions, as well as the asynchronous methods involving `Task`s.
 However, asynchronous features in NodeJS (`Promise`s) works fine by
 awaiting them explicitly.
+
+If you need to asynchronously access the NodeJS environment, one way is to use `@node_async`.
+`@node_async` works like `@async` in Julia, but instead of scheduling a `Task` in Julia,
+it creates a `JsPromise` to wait on. Thus, the tasks are managed by the NodeJS side.
+
+`jl_yield()` is automatically called in NodeJS' event loop, so it won't block other `Task`s in Julia.
 
 ## Bug Reports & Contributing
 
