@@ -12,6 +12,7 @@ Base.convert(::Type{NapiValue}, v::T) where T = NapiValue(v)
 Base.convert(::Type{NapiValue}, v::ValueTypes) = NapiValue(v)
 NapiValue(v) = napi_value(v)
 napi_value(v::NapiValue) = v
+napi_value(v::Ptr) = convert(NapiValue, v)
 
 ==(a::ValueTypes, b::ValueTypes) = @with_scope try
     @napi_call napi_strict_equals(a::NapiValue, b::NapiValue)::Bool

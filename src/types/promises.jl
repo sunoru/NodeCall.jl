@@ -98,9 +98,7 @@ end
 macro node_async(expr)
     letargs = Base._lift_one_interp!(expr)
     thunk = esc(:(()->($expr)))
-    quote
-        let $(letargs...)
-            _JS_MAKE_ASYNC($thunk)
-        end
-    end
+    :(let $(letargs...)
+        _JS_MAKE_ASYNC($thunk)
+    end)
 end

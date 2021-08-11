@@ -40,6 +40,9 @@ include("contexts.jl")
 export node_env, node_uvloop, run_node_uvloop
 include("env.jl")
 
+export ThreadSafeFunction
+include("threads.jl")
+
 export @node_cmd, @npm_cmd, @npx_cmd
 export NPM, npx
 include("executables/executables.jl")
