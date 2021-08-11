@@ -41,13 +41,14 @@ value(::Type{NodeValueTemp}, v::NapiValue; tempname=nothing) = NodeValueTemp(v, 
 node_value_finalizer(v::NodeObject) = if initialized()
     ref = getfield(v, :ref)
     if ref != C_NULL
-        @napi_call napi_delete_reference(ref::NapiRef)
+        @napi_call true napi_delete_reference(ref::NapiRef)
     end
 end
 node_value_finalizer(v::NodeValueTemp) = if initialized()
     t = getfield(v, :tempname)
     if t != ""
-        delete!(get_tempvar(), t)
+        s = @napi_call true napi_create_string_utf8(t::Cstring, length(t)::Csize_t)::NapiValue
+        @napi_call true napi_delete_property(get_tempvar()::NapiValue, s::NapiValue)::Bool
     end
 end
 

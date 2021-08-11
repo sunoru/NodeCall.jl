@@ -13,8 +13,6 @@ end
 const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL, 0)
 node_env() = _GLOBAL_ENV.env
 node_uvloop() = _GLOBAL_ENV.loop
-const _INITIALIZED = Ref(false)
-initialized() = _INITIALIZED[]
 const _STARTED_FROM_NODE = Ref(false)
 started_from_node() = _STARTED_FROM_NODE[]
 
@@ -48,7 +46,7 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
         start_node(args)
     end
     _GLOBAL_ENV.env = env
-    _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
+    _GLOBAL_ENV.loop = @napi_call napi_get_uv_event_loop()::Ptr{Cvoid}
     ret = @ccall :libjlnode.initialize(
         _GLOBAL_ENV.loop::Ptr{Cvoid},
         pointer_from_objref(NodeCall)::Ptr{Cvoid}
@@ -62,6 +60,7 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     _initialize_globals()
     new_context()
     Random.seed!(_GLOBAL_RNG)
+    _GLOBAL_TASK[] = current_task()
     _INITIALIZED[] = true
     # run_node_uvloop()
     @debug "NodeJS initialized."
@@ -95,7 +94,5 @@ function __init__()
     if isinteractive()
         initialize()
     end
-    finalizer(_GLOBAL_ENV) do _
-        dispose()
-    end
+    atexit(dispose)
 end

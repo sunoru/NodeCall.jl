@@ -62,3 +62,5 @@ function dereference(id::Union{UInt64, Ptr})
     end
     ref
 end
+
+jlnode_get_reference(id) = get_reference(id)[]
