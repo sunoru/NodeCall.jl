@@ -1,9 +1,3 @@
-using RandomNumbers.Xorshifts: Xoshiro256StarStar
-
-const _GLOBAL_RNG = Xoshiro256StarStar()
-global_rng() = _GLOBAL_RNG
-
-
 macro napi_call(env, sym)
     has_return = sym.head == :(::)
     status = gensym()

@@ -5,7 +5,7 @@
 
 Call NodeJS from Julia.
 
-Currently only supports NodeJS v14.17.3 (LTS).
+Currently supports NodeJS v16.13.1 (Latest LTS).
 
 ## Dependency
 

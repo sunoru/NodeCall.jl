@@ -1,6 +1,5 @@
 import Base: eventloop
 import Libdl
-import Random
 
 using libjlnode_jll
 
@@ -61,7 +60,6 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     })()""", RESULT_RAW, context=nothing)
     _initialize_globals()
     new_context()
-    Random.seed!(_GLOBAL_RNG)
     _INITIALIZED[] = true
     # run_node_uvloop()
     @debug "NodeJS initialized."

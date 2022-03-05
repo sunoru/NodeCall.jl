@@ -1,6 +1,6 @@
 using libnode_jll: node as node_cmd_func, artifact_dir
 
-const NPM_DIR = joinpath(artifact_dir, "lib", "node_modules", "npm")
+const NPM_DIR = joinpath(artifact_dir, "lib", "node_modules", "corepack")
 
 function cmd_gen(args...)
     cmd = node_cmd_func()
@@ -17,13 +17,13 @@ macro node_cmd(args)
 end
 
 macro npm_cmd(args)
-    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npm-cli.js")
+    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "dist", "npm.js")
         cmd_gen(jsfile, cmd)
     end)
 end
 
 macro npx_cmd(args)
-    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npx-cli.js")
+    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "dist", "npx.js")
         cmd_gen(jsfile, cmd)
     end)
 end

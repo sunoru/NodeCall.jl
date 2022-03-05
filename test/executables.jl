@@ -3,11 +3,11 @@ using Random
 using Suppressor
 
 @testset "executables" begin
-    @test read(node`--version`, String) |> strip == "v14.17.3"
-    @test read(npm`--version`, String) |> strip == "6.14.13"
+    @test read(node`--version`, String) |> strip == "v16.14.0"
+    @test read(npm`--version`, String) |> strip == "8.3.1"
     @test @capture_out(begin
         npx("--version")
-    end)|> strip == "6.14.13"
+    end)|> strip == "8.3.1"
     ps = [
         getproperty(NPM, Symbol(replace(command, '-'=>'_')))("--help"; wait=false)
         for command in NPM.COMMANDS

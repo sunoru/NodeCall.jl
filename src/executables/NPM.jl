@@ -3,18 +3,20 @@ module NPM
 using JSON
 import NodeCall: @npm_cmd
 
-const COMMANDS = let o = false
+const COMMANDS = let o = 0
     commands = String[]
     for line in split(read(npm`help`, String), '\n')
-        if o
+        if o ≡ 2
             isempty(line) && break
             for cmd in split(line, ',')
                 cmd = strip(cmd)
                 isempty(cmd) && continue
                 push!(commands, cmd)
             end
-        elseif startswith(line, "where")
-            o = true
+        elseif startswith(line, "All commands")
+            o = 1
+        elseif o ≡ 1
+            o = 2
         end
     end
     Tuple(commands)

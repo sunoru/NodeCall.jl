@@ -31,7 +31,7 @@ mutable struct NodeValueTemp <: NodeValue
 end
 
 NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
-    tempname = isnothing(tempname) ? string(uuid4(global_rng())) : tempname
+    tempname = isnothing(tempname) ? string(uuid4()) : tempname
     tempvar = get_tempvar()
     tempvar[tempname] = v
     NodeValueTemp(tempname)
