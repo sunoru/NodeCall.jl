@@ -1,7 +1,9 @@
 using NodeCall
 
+NodeCall.initialize()
+
 cd(@__DIR__)
-run(npm("install"))
+run(npm`install`)
 
 const puppeteer = require("puppeteer")
 const console = node"console"

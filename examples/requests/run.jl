@@ -1,8 +1,10 @@
 using NodeCall
 
+NodeCall.initialize()
+
 cd(@__DIR__)
 # Install `node-fetch` with `npm`.
-run(npm("install"))
+run(npm`install`)
 
 const jsfetch = require("node-fetch")
 const console = node"console"

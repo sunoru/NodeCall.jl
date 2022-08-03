@@ -1,8 +1,10 @@
 using NodeCall
 
+NodeCall.initialize()
+
 cd(@__DIR__)
 # Install babel to transpile TypeScript.
-run(npm("install"))
+run(npm`install`)
 const babel = require("@babel/core")
 
 # Run scripts in TS.
@@ -12,7 +14,7 @@ function run_ts(ts_script)
         presets: ["@babel/preset-typescript"]
     }"""
     result = @await babel.transformAsync(ts_script, options)
-    run_script(result.code)
+    node_eval(result.code)
 end
 
 run_ts("""

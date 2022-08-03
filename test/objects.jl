@@ -11,15 +11,11 @@ using Dates
     b.a = node"a"
     @test b.a == node"a"
     @test node"(b) => b.a === a"(b)
-    b[a] = true
     @test hasproperty(b, :a)
-    @test a ∈ b
-    @test b[a]
     b[1] = 123
     @test b[1] == 123
     delete!(b, 1)
     delete!(b, "a")
-    delete!(b, a)
     @test all((!haskey).([b], ["a", a, 1]))
 
     node"""class A {
@@ -31,7 +27,6 @@ using Dates
     instance = @new ClassA(4, 5)
     @test instance.c == 20
     @test instanceof(instance, ClassA)
-    @test !instanceof(instance, nothing)
 
     @test node"new Date('2007-01-28')" == DateTime(2007, 1, 28)
 
