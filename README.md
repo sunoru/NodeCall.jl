@@ -9,7 +9,7 @@ Currently supports NodeJS v16.13.1 (Latest LTS).
 
 ## Dependency
 
-This package depends on [`libnode_jll.jl`](https://github.com/JuliaBinaryWrappers/libnode_jll.jl) 
+This package depends on [`libnode_jll.jl`](https://github.com/JuliaBinaryWrappers/libnode_jll.jl)
 and [`libjlnode_jll.jl`](https://github.com/JuliaBinaryWrappers/libjlnode_jll.jl).
 
 You need to have Julia v1.6+ installed to use this package.
@@ -33,13 +33,13 @@ With `using NodeCall`, a NodeJS instance will start in the current process. A ne
 ([`vm`](https://nodejs.org/docs/latest-v14.x/api/vm.html) in the standard library of NodeJS)
 is automatically created.
 
-And JavaScript code can be run with `run_script` or `@node_str`
+And JavaScript code can be run with `node_eval` or `@node_str`
 (they are equivalent except the latter supports interpolation):
 
 ```julia
 julia> using NodeCall
 
-julia> run_script("console.log('Hello, world!')")
+julia> node_eval("console.log('Hello, world!')")
 Hello, world!
 
 julia> x = 5

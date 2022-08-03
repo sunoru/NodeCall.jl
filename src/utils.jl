@@ -1,40 +1,56 @@
-macro napi_call(env, sym)
-    has_return = sym.head == :(::)
-    status = gensym()
-    func, result = if has_return
-        sym.args[1], gensym()
-    else
-        sym, status
-    end
-    define_vars = if has_return
-        return_type = sym.args[2]
-        push!(func.args, :($result::Ptr{$return_type}))
+function _napi_call(expr, env = nothing)
+    define_vars = if env ≡ nothing
+        env = :env
         quote
-          $result = Ref{$return_type}()
+            env = node_env()
         end
     else
         quote end
     end
-    insert!(func.args, 2, :($env::NodeCall.NapiEnv))
-    fname = func.args[1]
-    func.args[1] = :(:libjlnode.x)
-    func.args[1].args[2] = QuoteNode(fname)
-    esc(quote
-        $define_vars
-        $status = @ccall $func::NodeCall.NapiStatus
-        if $status != NodeCall.NapiTypes.napi_ok
-            @debug $status
-            NodeCall.throw_error($env)
+    has_return = expr.head ≡ :(::)
+    invocation_expr, result_sym = if has_return
+        expr.args[1], gensym()
+    else
+        expr, :(status)
+    end
+    fname = QuoteNode(invocation_expr.args[1])
+    args = invocation_expr.args[2:end]
+    argtypes = :((NapiEnv,))
+    for arg in args
+        @assert arg.head ≡ :(::) "Every argument should have a type"
+        push!(argtypes.args, arg.args[2])
+    end
+    ccall_func = :(ccall(($fname, :libjlnode), NapiStatus, $argtypes, $env))
+    for arg in args
+        push!(ccall_func.args, esc(arg.args[1]))
+    end
+
+    if has_return
+        result_type = esc(expr.args[2])
+        push!(ccall_func.args[4].args, :(Ptr{$result_type}))
+        push!(ccall_func.args, result_sym)
+        push!(define_vars.args, :($result_sym = Ref{$result_type}()))
+    end
+
+    quote
+        let
+            $define_vars
+            status = $ccall_func
+            if status ≢ NapiTypes.napi_ok
+                @debug status
+                throw_error($env)
+            end
+            $result_sym[]
         end
-        $result[]
-    end)
+    end
 end
-macro napi_call(sym)
-    env = gensym()
-    esc(quote
-        $env = node_env()
-        @napi_call $env $sym
-    end)
+
+macro napi_call(env, expr)
+    _napi_call(expr, esc(env))
+end
+
+macro napi_call(expr)
+    _napi_call(expr)
 end
 
 function throw_error(env::NapiEnv = node_env())

@@ -90,11 +90,13 @@ end
         }
     })
 })()"""
+@global_js_const _JS_SET_ADD = raw"(m, v) => m.add(v)"
+
 create_object_dict(x::AbstractDict) = create_object_mutable(x)
 function create_object_set(x::AbstractSet)
-    m = run_script("new Set()", RESULT_RAW)
+    m = node_eval("new Set()", RESULT_RAW)
     for v in x
-        m.add(v)
+        _JS_SET_ADD(m, v; result=RESULT_RAW)
     end
     m
 end
@@ -161,12 +163,12 @@ end
 
 _get_cached(v::NapiValue) = @with_scope begin
     jltype_external = @napi_call napi_get_named_property(v::NapiValue, _JLTYPE_PROPERTY::Cstring)::NapiValue
-    get_type(jltype_external) == NapiTypes.napi_undefined && return nothing
+    get_type(jltype_external) ≡ NapiTypes.napi_undefined && return nothing
     T = value(NodeExternal, jltype_external)::DataType
     isnothing(T) && return nothing
     if T <: AbstractSet
         return value(T, v)
-    elseif T.mutable
+    elseif ismutabletype(T)
         jlobject_external = @napi_call napi_get_named_property(v::NapiValue, _JLPTR_PROPERTY::Cstring)::NapiValue
         get_type(jlobject_external) == NapiTypes.napi_undefined && return nothing
         value(NodeExternal(jlobject_external))
@@ -279,7 +281,7 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
     nv
 end
 
-object_finalizer(f_ptr, data_ptr) = if initialized() 
+object_finalizer(f_ptr, data_ptr) = if initialized()
     f = value(dereference(f_ptr))
     data = dereference(data_ptr)
     f(value(data))

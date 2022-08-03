@@ -54,7 +54,7 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
     )::Cint
     @assert ret == 0
     @debug "Initializing NodeJS..."
-    run_script("""(() => {
+    node_eval("""(() => {
         globalThis.$(TEMPVAR_NAME) = {}
         globalThis.assert = require('assert').strict
     })()""", RESULT_RAW, context=nothing)

@@ -3,6 +3,7 @@ module NodeCall
 using libnode_jll
 using libjlnode_jll
 
+export NapiTypes
 include("napi_types.jl")
 using .NapiTypes
 
@@ -12,7 +13,7 @@ include("types/bases.jl")
 include("types/node_values.jl")
 
 export RESULT_RAW, RESULT_NODE, RESULT_VALUE
-export run_script, @node_str, require
+export node_eval, @node_str, require
 include("eval.jl")
 
 export NapiValue, NodeValue, JsValue, NodeError,
@@ -26,6 +27,7 @@ export set!, instanceof
 export @node_async, @await, state, result
 export node_throw
 include("types/errors.jl")
+include("types/jlnode_helpers.jl")
 include("types/common.jl")
 include("types/primitives.jl")
 include("types/objects.jl")

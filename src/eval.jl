@@ -21,7 +21,7 @@ function with_result(f, type::ResultType=RESULT_VALUE; this=nothing)
 end
 
 """
-    run_script(script; context=current_context(), result=RESULT_VALUE)
+    node_eval(script; context=current_context(), result=RESULT_VALUE)
 
 Evaluate the given JavaScript script in a given `context`. If `context` is `nothing`,
 the script will be run in the global scope.
@@ -34,7 +34,7 @@ Thus, if you did't open one, the `napi_value` would remain in the global
 If `result` is `RESULT_VALUE` (which is the default), the result will be converted to
 the most suitable Julia type before being returned.
 """
-function run_script(
+function node_eval(
     script::AbstractString,
     result=RESULT_VALUE;
     context=current_context(),
@@ -182,7 +182,7 @@ Available `options`:
 - `g`: Run the script in the global scope (instead of in a `vm.Context`).
 - `f`: Do not delete locals after running (for the interpolated variables).
 
-See docs for `run_script` for details.
+See docs for `node_eval` for details.
 """
 macro node_str(code, options...)
     result, global_, keep_locals = if length(options) == 1
@@ -233,17 +233,17 @@ macro node_str(code, options...)
         nothing
     else
         delete_expr = "delete $locals_sym"
-        :(run_script($delete_expr, RESULT_RAW; context=$context))
+        :(node_eval($delete_expr, RESULT_RAW; context=$context))
     end
     quote
         with_result($result) do
             $assign_locals
             code = $code_expr
-            ret = run_script(code, RESULT_RAW; context=$context)
+            ret = node_eval(code, RESULT_RAW; context=$context)
             $delete_locals
             ret
         end
     end
 end
 
-require(id::AbstractString; result=RESULT_VALUE) = run_script("globalThis.require('$(id)')", result)
+require(id::AbstractString; result=RESULT_VALUE) = node_eval("globalThis.require('$(id)')", result)

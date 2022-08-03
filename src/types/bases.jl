@@ -54,10 +54,6 @@ function value(napi_value::NapiValue; this=nothing)
     end
 end
 
-# For being called in C++ code.
-@noinline napi_value_from_value(v) = napi_value(v)
-@noinline napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
-
 macro global_js_const(def, is_object=true)
     @assert def isa Expr && def.head == :(=) && length(def.args) == 2
     typ = is_object ? :NodeObject : :NodeValueTemp
@@ -77,7 +73,7 @@ end
 
 _initialize_globals() = @with_scope begin
     for (ref, script) in ObjectReference[:global_init][]
-        nv = run_script(script, RESULT_RAW)
+        nv = node_eval(script, RESULT_RAW)
         if ref isa NodeObject
             v = @napi_call napi_create_reference(nv::NapiValue, 1::UInt32)::NapiRef
             setfield!(ref, :ref, v)
