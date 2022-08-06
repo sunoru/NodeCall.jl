@@ -9,11 +9,12 @@ include("test_common.jl")
     node"const fs = require('fs')"
 
     cd(@__DIR__)
+    ensure_import_directory()
     isfile("package.json") || NPM.init("-y")
     # Test with `canvas` that is a npm package with native dependencies.
     NPM.is_installed("canvas") || NPM.install("canvas")
-    canvas_module = require("canvas")
-    canvas = canvas_module.createCanvas(10, 10)
+    @node_import { createCanvas } from "canvas"
+    canvas = createCanvas(10, 10)
     ctx = canvas.getContext("2d")
     ctx.strokeStyle = "rgba(0,0,0,0.5)"
     ctx.beginPath()
@@ -21,6 +22,6 @@ include("test_common.jl")
     ctx.lineTo(10, 3)
     ctx.stroke()
     @test canvas.toDataURL() == "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+" *
-        "9AAAABmJLR0QA/wD/AP+gvaeTAAAAV0lEQVQYla3PsQ1AAABE0aehYQAliQEkJHaxroROYgUWEJ1Ko1AgCr/+" * 
+        "9AAAABmJLR0QA/wD/AP+gvaeTAAAAV0lEQVQYla3PsQ1AAABE0aehYQAliQEkJHaxroROYgUWEJ1Ko1AgCr/+" *
         "l7vjb4KPTvYmhijRYLsTY1SosaDDfBXTM11gQo/12h+hRYIBI/anPblvx37kANwUCq3OvPHeAAAAAElFTkSuQmCC"
 end

@@ -56,7 +56,6 @@ end
 Base.show(io::IO, v::JsObjectType) = print(io, string(
     typeof(v), ": ",
     string_pointer(getfield(v, :ref))
-    # value(String, getfield(v, :ref))
 ))
 
 function Base.get(

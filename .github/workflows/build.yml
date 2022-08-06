@@ -13,7 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ["1.6"]  # , nightly]
+        julia-version: ["1.7"]  # , nightly]
         julia-arch: [x64]
         os: [ubuntu-latest]  # , macOS-latest, windows-latest]
 
@@ -26,7 +26,7 @@ jobs:
         with:
           version: ${{ matrix.julia-version }}
           arch: ${{ matrix.julia-arch }}
-      
+
       - name: Download artifact of jlnode
         uses: dawidd6/action-download-artifact@v2
         with:
@@ -39,7 +39,7 @@ jobs:
         run: |
           JLNODE_ARTIFACT=`julia --project=. -e "using Pkg;Pkg.instantiate();using libjlnode_jll;libjlnode_jll.dev_jll();println(libjlnode_jll.artifact_dir)"`
           mv jlnode/lib/* $JLNODE_ARTIFACT/lib/
-      
+
       - name: Test
         uses: julia-actions/julia-runtest@latest
       - uses: julia-actions/julia-processcoverage@v1

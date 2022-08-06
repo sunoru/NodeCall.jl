@@ -5,7 +5,7 @@
 
 Call NodeJS from Julia.
 
-Currently supports NodeJS v16.13.1 (Latest LTS).
+Currently supports NodeJS v16.14.0 (Latest LTS registered).
 
 ## Dependency
 
@@ -47,13 +47,21 @@ julia> node"2 * $x"
 10.0
 ```
 
+You can directly use `require` to use Node APIs.
+```julia
+julia> os = require("os");
+
+julia> os.type()
+"Linux"
+```
+
 To install a NPM package, use something like this:
 ```julia
 julia> NPM.install("boxen");
-+ boxen@5.0.1
-added 19 packages from 3 contributors and audited 26 packages in 0.782s
 
-7 packages are looking for funding
+added 19 packages, and audited 20 packages in 683ms
+
+11 packages are looking for funding
   run `npm fund` for details
 
 found 0 vulnerabilities
@@ -62,17 +70,22 @@ Note that it is equivalent to running `npm install` in the current working direc
 the specific version of NodeJS provided by `NodeCall.jl`.
 
 And then you can use the installed package as if you are writing JavaScript.
+In this example, `node_import` or `@node_import` should be used since `boxen` is a ES Module.
 
 ```julia
-julia> boxen = require("boxen");
+# `node_import` is like the function-like dynamic import in js, so it is asynchronous and should be awaited.
+julia> boxen = (@await node_import("boxen")).default;
 
-julia> println(boxen("Generated in JS"))
+# or you can use module style import declaration with `@node_import` macro.
+julia> @node_import boxen from "boxen";
+
+julia> boxen("Generated in JS") |> println
 ┌───────────────┐
 │Generated in JS│
 └───────────────┘
 
 # To pass an option object, the easiest way is to use a `NamedTuple` in Julia:
-julia> println(boxen("Passing options", (padding=1, borderStyle="double")))
+julia> boxen("Passing options", (padding=1, borderStyle="double")) |> println
 ╔═════════════════════╗
 ║                     ║
 ║   Passing options   ║

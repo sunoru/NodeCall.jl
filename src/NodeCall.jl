@@ -13,8 +13,12 @@ include("types/bases.jl")
 include("types/node_values.jl")
 
 export RESULT_RAW, RESULT_NODE, RESULT_VALUE
-export node_eval, @node_str, require
+export node_eval
 include("eval.jl")
+
+export require, node_import, ensure_import_directory
+export @node_str, @node_import
+include("import.jl")
 
 export NapiValue, NodeValue, JsValue, NodeError,
        NodeValueTemp, NodeObject, NodeExternal,

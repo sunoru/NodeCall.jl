@@ -41,7 +41,7 @@ for cmd in COMMANDS
     end
 end
 
-installed_packages(is_global=false) = ls("--depth=0", "--json", is_global ? "--global" : "") do json
+installed_packages(is_global=false) = ls("--depth=0", "--json", is_global ? "--location=global" : "") do json
     data = JSON.parse(json)
     Base.get(data, "dependencies", Dict{String, Any}())
 end

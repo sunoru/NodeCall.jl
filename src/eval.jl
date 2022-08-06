@@ -20,6 +20,15 @@ function with_result(f, type::ResultType=RESULT_VALUE; this=nothing)
     ret
 end
 
+const DYNAMIC_IMPORT = "__jlnode_import"
+@global_js_const _RUN_IN_VM = """(vm, script, context) => {
+    return vm.runInContext(script, context, {
+        importModuleDynamically(m) {
+            return $(DYNAMIC_IMPORT)(m)
+        }
+    })
+}"""
+
 """
     node_eval(script; context=current_context(), result=RESULT_VALUE)
 
@@ -50,10 +59,7 @@ function node_eval(
             @napi_call napi_run_script(script::NapiValue)::NapiValue
         end
     else
-        _VM.runInContext(
-            script, context;
-            result=result
-        )
+        _RUN_IN_VM(_VM, script, context; result = result)
     end
 end
 
@@ -245,5 +251,3 @@ macro node_str(code, options...)
         end
     end
 end
-
-require(id::AbstractString; result=RESULT_VALUE) = node_eval("globalThis.require('$(id)')", result)

@@ -84,4 +84,3 @@ _initialize_globals() = @with_scope begin
     end
     delete!(ObjectReference, :global_init)
 end
-
