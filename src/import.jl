@@ -48,11 +48,11 @@ end
 
 const IMPORT_UTIL_SOURCE_TEXT = "exports.node_import = (s) => import(s)"
 """
-    ensure_import_directory(path=pwd())
+    ensure_dynamic_import(path=pwd())
 
 A workaround for "invalid host defined options" if directly using dynamic import.
 """
-function ensure_import_directory(path=pwd())
+function ensure_dynamic_import(path=pwd())
     tmpfile, file = "", ""
     while true
         tmpfile, io = mktemp(cleanup=true)

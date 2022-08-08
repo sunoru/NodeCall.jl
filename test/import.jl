@@ -9,7 +9,7 @@ include("test_common.jl")
     node"const fs = require('fs')"
 
     cd(@__DIR__)
-    ensure_import_directory()
+    ensure_dynamic_import()
     isfile("package.json") || NPM.init("-y")
     # Test with `canvas` that is a npm package with native dependencies.
     NPM.is_installed("canvas") || NPM.install("canvas")

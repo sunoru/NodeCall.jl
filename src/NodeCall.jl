@@ -16,7 +16,7 @@ export RESULT_RAW, RESULT_NODE, RESULT_VALUE
 export node_eval
 include("eval.jl")
 
-export require, node_import, ensure_import_directory
+export require, node_import, ensure_dynamic_import
 export @node_str, @node_import
 include("import.jl")
 

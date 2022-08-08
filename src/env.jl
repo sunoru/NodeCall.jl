@@ -58,7 +58,7 @@ function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
         globalThis.$(TEMPVAR_NAME) = {}
         globalThis.assert = require('assert').strict
     })()""", RESULT_RAW, context=nothing)
-    ensure_import_directory()
+    ensure_dynamic_import()
     _initialize_globals()
     new_context()
     _INITIALIZED[] = true
