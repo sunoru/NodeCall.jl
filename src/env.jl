@@ -6,10 +6,10 @@ using libjlnode_jll
 mutable struct EnvironmentConfig
     env::NapiEnv
     loop::Ptr{Cvoid}
-    context_index::Int
+    current_context::NodeObject
 end
 
-const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL, 0)
+const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL, NodeObject())
 node_env() = _GLOBAL_ENV.env
 node_uvloop() = _GLOBAL_ENV.loop
 const _INITIALIZED = Ref(false)
@@ -37,14 +37,14 @@ function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     # end
 end
 
-function initialize(args=split(get(ENV, "JLNODE_ARGS", "")), env=nothing)
+function initialize(env=nothing; kwargs...)
     initialized() && return
     Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL)
     _STARTED_FROM_NODE[] = !isnothing(env)
     env = if started_from_node()
         reinterpret(NapiEnv, UInt64(env))
     else
-        start_node(args)
+        start_node(; kwargs...)
     end
     _GLOBAL_ENV.env = env
     _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
@@ -75,7 +75,7 @@ function dispose()
     @debug "NodeJS disposed."
 end
 
-function start_node(args=split(get(ENV, "JLNODE_ARGS", "")))
+function start_node(args=String[])
     initialized() && return
     @debug "Starting NodeJS instance..."
     env = Ref{NapiEnv}()
@@ -91,7 +91,7 @@ end
 
 function __init__()
     # Auto start and initialize NodeJS if in REPL.
-    if isinteractive()
+    if isinteractive() && get(ENV, "JLNODE_DISABLE_AUTO_START", "0") == "0"
         initialize()
     end
     finalizer(_GLOBAL_ENV) do _

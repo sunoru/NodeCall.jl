@@ -34,7 +34,7 @@ end
     # Objects:
     # `object`
     @test node"[]"o isa NodeObject
-    @check_type node"{}" JsObject (x=1,) node"Object" 
+    @check_type node"{}" JsObject (x=1,) node"Object"
     # `function`
     @check_type node"eval" JsFunction{Nothing} println node"Function"
 
@@ -49,23 +49,24 @@ end
     @check_type node"new Int8Array(1)"         Vector{Int8}     Int8[]    node"Int8Array"
     @check_type node"new Uint8Array(1)"        Vector{UInt8}    UInt8[]   node"Uint8Array"
     @check_type node"new Uint8ClampedArray(1)" Vector{UInt8}
-    @check_type node"new Int16Array(1)"        Vector{Int16}    Int16[]   node"Int16Array"    
-    @check_type node"new Uint16Array(1)"       Vector{UInt16}   UInt16[]  node"Uint16Array"   
-    @check_type node"new Int32Array(1)"        Vector{Int32}    Int32[]   node"Int32Array"    
-    @check_type node"new Uint32Array(1)"       Vector{UInt32}   UInt32[]  node"Uint32Array"   
-    @check_type node"new Float32Array(1)"      Vector{Float32}  Float32[] node"Float32Array"  
-    @check_type node"new Float64Array(1)"      Vector{Float64}  Float64[] node"Float64Array"  
-    @check_type node"new BigInt64Array(1)"     Vector{Int64}    Int64[]   node"BigInt64Array" 
+    @check_type node"new Int16Array(1)"        Vector{Int16}    Int16[]   node"Int16Array"
+    @check_type node"new Uint16Array(1)"       Vector{UInt16}   UInt16[]  node"Uint16Array"
+    @check_type node"new Int32Array(1)"        Vector{Int32}    Int32[]   node"Int32Array"
+    @check_type node"new Uint32Array(1)"       Vector{UInt32}   UInt32[]  node"Uint32Array"
+    @check_type node"new Float32Array(1)"      Vector{Float32}  Float32[] node"Float32Array"
+    @check_type node"new Float64Array(1)"      Vector{Float64}  Float64[] node"Float64Array"
+    @check_type node"new BigInt64Array(1)"     Vector{Int64}    Int64[]   node"BigInt64Array"
     @check_type node"new BigUint64Array(1)"    Vector{UInt64}   UInt64[]  node"BigUint64Array"
     # `Map`, `WeekMap`, `Set`, `WeakSet`
     @check_type node"new Map()"     Dict{Any, Any}
     @check_type node"new WeakMap()" JsObject
     @check_type node"new Set()"     Set{Any}
     @check_type node"new WeakSet()" JsObject
-    # `ArrayBuffer`, `SharedArrayBuffer`, `DataView`
+    # `ArrayBuffer`, `SharedArrayBuffer`, `DataView`, `Buffer`
     @check_type node"new ArrayBuffer(1)" Vector{UInt8}
     @check_type node"new SharedArrayBuffer(1)" JsObject # Vector{UInt8}
     @check_type node"new DataView(new ArrayBuffer(1))" Vector{UInt8}
+    @check_type node"Buffer.alloc(1)" Vector{UInt8}
     # `Promise`
     @check_type node"new Promise(()=>{})" JsPromise
 

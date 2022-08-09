@@ -1,5 +1,6 @@
 include("test_common.jl")
 using Dates
+using JSON
 
 @testset "objects" begin
     new_context()
@@ -14,6 +15,7 @@ using Dates
     @test hasproperty(b, :a)
     b[1] = 123
     @test b[1] == 123
+    @test JSON.json(b) == "{\"1\":123.0,\"a\":{}}"
     delete!(b, 1)
     delete!(b, "a")
     @test all((!haskey).([b], ["a", a, 1]))
@@ -31,10 +33,27 @@ using Dates
     @test node"new Date('2007-01-28')" == DateTime(2007, 1, 28)
 
     str_dict = Dict("k"=>false, "p"=>123)
-    any_dict = Dict(false=>false, 123=>456)
-    @test "k" ∈ node_value(str_dict)
+    str_dict_nv = node_value(str_dict)
+    @test Dict(str_dict_nv) == str_dict
+    @test value(Dict{String, Int}, str_dict_nv) == str_dict
+    @test "k" ∈ str_dict_nv
     @test Object.keys(str_dict) == ["k", "p"]
-    @test Object.keys(any_dict) == ["false", "123"]
+    # `Dict` is mutable.
+    mutated_dict = node"""(dict) => {
+        dict.p += 1
+        dict.a = 456
+        return dict
+    }"""(str_dict_nv)
+    @test str_dict["p"] == 124
+    @test str_dict["a"] == 456
+    @test mutated_dict ≡ str_dict
+
+    int_dict = Dict(false=>false, 123=>456)
+    @test Object.keys(int_dict) == ["false", "123"]
+    @test node"(d) => d[0]"(int_dict) ≡ false
+    int_dict2 = Dict(1=>2, 3=>4)
+    @test node"(d) => d[1]"(int_dict2) ≡ 2
+
     js_map = node"""(() => {
         const m = new Map()
         m.set(1, 2)
@@ -44,6 +63,8 @@ using Dates
     @test value(js_map) == Dict(1=>2, "x"=>3)
 
     some_set = Set([1, 2])
+    some_set_nv = node_value(some_set)
+    @test Set(some_set_nv) == some_set
     mutated_set = node"""(set) => {
         set.add(3)
         return set
@@ -79,6 +100,7 @@ using Dates
     @test named_tuple3 isa JsObject
     @test "x" in named_tuple3
     @test NamedTuple(named_tuple3) ≡ (x="t", y=true, z="z")
+    @test value(NamedTuple{(:x, :y), Tuple{String, Bool}}, named_tuple3) ≡ (x="t", y=true)
 
     struct Foo
         x::Int
@@ -91,8 +113,13 @@ using Dates
     node"(foo, s) => (foo.x = s, foo)"(foo_m, "after")
     @test foo_m.x == "after"
     @test node"(foo) => 'x' in foo && foo.x === 'after'"(foo_m)
+    @test Object.keys(foo_m) == ["x"]
 
     @test length(node"{length: 5}") == 5
+
+    module FooModule
+    end
+    @test Object.keys(FooModule) == [:FooModule]
 
     delete_context()
 end

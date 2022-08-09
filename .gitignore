@@ -17,3 +17,5 @@ package-lock.json
 Manifest.toml
 
 /test/package.json
+
+CompatHelper.yml

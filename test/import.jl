@@ -13,8 +13,11 @@ include("test_common.jl")
     isfile("package.json") || NPM.init("-y")
     # Test with `canvas` that is a npm package with native dependencies.
     NPM.is_installed("canvas") || NPM.install("canvas")
-    @node_import { createCanvas } from "canvas"
-    canvas = createCanvas(10, 10)
+    @node_import canvas from "canvas"
+    @node_import canvas2, { createCanvas: cc } from "canvas"
+    @test cc == canvas.createCanvas
+    @test canvas == canvas2
+    canvas = cc(10, 10)
     ctx = canvas.getContext("2d")
     ctx.strokeStyle = "rgba(0,0,0,0.5)"
     ctx.beginPath()

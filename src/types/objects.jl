@@ -35,15 +35,6 @@ create_object(
     end
 end
 
-create_object(
-    properties::AbstractArray{NapiPropertyDescriptor};
-    result=RESULT_VALUE
-) = with_result(result) do
-    nv = @napi_call napi_create_object()::NapiValue
-    define_properties!(nv, properties)
-    nv
-end
-
 @global_js_const _JS_OBJECT = "Object"
 @global_js_const _JS_OBJECT_KEYS_LENGTH = "(o) => Object.keys(o).length"
 @global_js_const _JS_OBJECT_PROXY = raw"""(() => {

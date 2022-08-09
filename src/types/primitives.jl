@@ -38,6 +38,9 @@ napi_value(v::Number) = napi_value(Float64(v))
 napi_value(s::AbstractString) = @napi_call napi_create_string_utf8(s::Cstring, length(s)::Csize_t)::NapiValue
 napi_value(s::Char) = napi_value(string(s))
 napi_value(s::Symbol) = @napi_call napi_create_symbol(napi_value(string(s))::NapiValue)::NapiValue
+# napi_value(s::Symbol) = let ss = string(s)
+#     @napi_call node_api_symbol_for(ss::Cstring, length(ss)::Csize_t)::NapiValue
+# end
 napi_value(s::Cstring) = napi_value(unsafe_string(s))
 function napi_value(v::BigInt)
     sign_bit = v < 0 ? 1 : 0

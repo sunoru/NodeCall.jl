@@ -73,7 +73,7 @@ end
 
 _initialize_globals() = @with_scope begin
     for (ref, script) in ObjectReference[:global_init][]
-        nv = node_eval(script, RESULT_RAW)
+        nv = node_eval(script, RESULT_RAW, context=nothing)
         if ref isa NodeObject
             v = @napi_call napi_create_reference(nv::NapiValue, 1::UInt32)::NapiRef
             setfield!(ref, :ref, v)

@@ -1,7 +1,3 @@
-napi_value_from_value(v) = napi_value(v)
-napi_value_to_value(nv::Ptr{Nothing}) = value(convert(NapiValue, nv))
-
-
 _convert_key(::AbstractDict{T}, k::T) where T = k
 _convert_key(::AbstractDict{String}, k) = string(k)
 _convert_key(::AbstractDict{String}, k::String) = k

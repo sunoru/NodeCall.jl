@@ -1,36 +1,36 @@
 # NodeCall.jl
 
-[![CI Test](https://github.com/sunoru/NodeCall.jl/actions/workflows/build.yml/badge.svg)](https://github.com/sunoru/NodeCall.jl/actions/workflows/build.yml)
+[![CI Test](https://github.com/sunoru/NodeCall.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/sunoru/NodeCall.jl/actions/workflows/CI.yml)
 [![codecov](https://codecov.io/gh/sunoru/NodeCall.jl/branch/main/graph/badge.svg?token=8VQGZEMHAI)](https://codecov.io/gh/sunoru/NodeCall.jl)
 
 Call NodeJS from Julia.
 
-Currently supports NodeJS v16.14.0 (Latest LTS registered).
+Currently supports NodeJS v16 (Latest LTS).
 
 ## Dependency
 
 This package depends on [`libnode_jll.jl`](https://github.com/JuliaBinaryWrappers/libnode_jll.jl)
 and [`libjlnode_jll.jl`](https://github.com/JuliaBinaryWrappers/libjlnode_jll.jl).
 
-You need to have Julia v1.6+ installed to use this package.
+You need to have Julia v1.7+ installed to use this package.
 
 ## Installation
 
 `NodeCall.jl` has not been registered yet, so you need to manually install it by its git source:
 
 ```julia
-(v1.6) pkg> add https://github.com/sunoru/NodeCall.jl
+(v1.7) pkg> add https://github.com/sunoru/NodeCall.jl
 ```
 
 You can then run the tests by:
 ```julia
-(v1.6) pkg> test NodeCall
+(v1.7) pkg> test NodeCall
 ```
 
 ## Usage
 
 With `using NodeCall`, a NodeJS instance will start in the current process. A new V8 Virtual Machine context
-([`vm`](https://nodejs.org/docs/latest-v14.x/api/vm.html) in the standard library of NodeJS)
+([`vm`](https://nodejs.org/docs/latest-v16.x/api/vm.html) in the standard library of NodeJS)
 is automatically created.
 
 And JavaScript code can be run with `node_eval` or `@node_str`

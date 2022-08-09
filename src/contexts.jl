@@ -1,4 +1,4 @@
-const NodeContexts = Vector{NodeObject}()
+const NodeContexts = Dict{String, NodeObject}()
 @global_js_const _VM = "require('vm')"
 @global_js_const _ASSIGN_DEFAULTS = """(() => {
     const keys = ['console']
@@ -23,72 +23,72 @@ const NodeContexts = Vector{NodeObject}()
     }
 })()"""
 
-current_context() = let i = _GLOBAL_ENV.context_index
-    i == 0 ? nothing : NodeContexts[i]
-end
+current_context() = _GLOBAL_ENV.current_context
 
-function get_context(index::Integer)
-    @assert 1 ≤ index ≤ length(NodeContexts)
-    NodeContexts[index]
-end
+get_context(key::AbstractString) = NodeContexts[key]
 
-function switch_context(index::Integer)
-    context = get_context(index)
-    _GLOBAL_ENV.context_index = index
+function switch_context(key::AbstractString)
+    context = get_context(key)
+    _GLOBAL_ENV.current_context = context
     context
 end
 function switch_context(context)
-    for i in 1:length(NodeContexts)
-        if NodeContexts[i] == context
-            return switch_context(i)
-        end
+    if context ∉ values(NodeContexts)
+        NodeContexts[string(uuid4())] = context
     end
-    push!(NodeContexts, context)
-    switch_context(length(NodeContexts))
+    _GLOBAL_ENV.current_context = context
+    context
 end
 
-new_context(context_object=nothing; add_defaults=true, be_current=true) = @with_scope begin
+new_context(key=string(uuid4()), context_object=nothing; add_defaults=true, set_current=true) = @with_scope begin
     if isnothing(context_object)
-        context_object = create_object()
+        context_object = create_object(result=RESULT_RAW)
     end
     if add_defaults
-        context_object = _ASSIGN_DEFAULTS(context_object; result=RESULT_RAW)
+        context_object = _ASSIGN_DEFAULTS(context_object; context=nothing, result=RESULT_RAW)
     end
     context = _VM.createContext(
         context_object;
+        context=nothing,
         result=RESULT_NODE
     )
-    push!(NodeContexts, context)
-    if be_current
-        switch_context(length(NodeContexts))
+    NodeContexts[key] = context
+    if set_current
+        switch_context(key)
     end
     context
 end
 
-function delete_context(index::Integer=_GLOBAL_ENV.context_index)
-    if _GLOBAL_ENV.context_index == index
-        _GLOBAL_ENV.context_index = length(NodeContexts) == 1 ? 0 : 1
+function delete_context(key::AbstractString)
+    if haskey(NodeContexts, key)
+        context = NodeContexts[key]
+        pop!(NodeContexts, key)
+        if _GLOBAL_ENV.current_context == context
+            @debug "Current context is being deleted"
+            if length(NodeContexts) > 0
+                _GLOBAL_ENV.current_context = last(collect(values(NodeContexts)))
+            else
+                new_context()
+            end
+        end
+        true
+    else
+        false
     end
-    deleteat!(NodeContexts, index)
-    if length(NodeContexts) == 0
-        new_context()
-    end
-    true
 end
-function delete_context(context)
-    for i in 1:length(NodeContexts)
-        if NodeContexts[i] == context
-            return delete_context(i)
+function delete_context(context=current_context())
+    for key in keys(NodeContexts)
+        if NodeContexts[key] == context
+            return delete_context(key)
         end
     end
     false
 end
 
-function clear_context() 
-    _GLOBAL_ENV.context_index = 0
-    resize!(NodeContexts, 0)
+function clear_context()
+    empty!(NodeContexts)
     new_context()
     nothing
 end
 
-list_contexts() = copy(NodeContexts)
+list_contexts() = collect(NodeContexts)

@@ -16,6 +16,12 @@ _import_symbols(id::String, imports::Symbol) = quote
     $imports = fetch(node_import($id)).default
 end |> esc
 function _import_symbols(id::String, imports::Expr)
+    if imports.head ≡ :tuple
+        ps = [_import_symbols(id, p) for p in imports.args]
+        return quote
+            $(ps...)
+        end
+    end
     @assert imports.head ≡ :braces
     sym = gensym()
     expr = quote
@@ -30,7 +36,7 @@ end
 """
     foo = @await @node_import "foo"
     @node_import foo from "foo"
-    @node_import { foo: foo2, bar } from "foo"
+    @node_import foo, { bar: b, bar2 } from "foo"
 
 A helper for importing a module in a JavaScript style. `:` is used instead of `as`.
 """
