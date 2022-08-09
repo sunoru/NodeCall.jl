@@ -10,7 +10,7 @@ include("test_common.jl")
     node"const f_ctx2 = () => 1"
     @test node"f_ctx2()" == 1
     @test_throws NodeError node"f_ctx1()"
-    @test list_contexts() == [ctx1, ctx2]
+    @test Set(x[2] for x in list_contexts()) == Set([ctx1, ctx2])
     switch_context(ctx1)
     @test node"f_ctx1()"
     delete_context(ctx1)

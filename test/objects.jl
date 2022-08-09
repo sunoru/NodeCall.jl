@@ -2,6 +2,9 @@ include("test_common.jl")
 using Dates
 using JSON
 
+module FooModule
+end
+
 @testset "objects" begin
     new_context()
 
@@ -52,7 +55,7 @@ using JSON
     @test Object.keys(int_dict) == ["false", "123"]
     @test node"(d) => d[0]"(int_dict) ≡ false
     int_dict2 = Dict(1=>2, 3=>4)
-    @test node"(d) => d[1]"(int_dict2) ≡ 2
+    @test node"(d) => d[1]"(int_dict2) ≡ 2.0
 
     js_map = node"""(() => {
         const m = new Map()
@@ -117,9 +120,7 @@ using JSON
 
     @test length(node"{length: 5}") == 5
 
-    module FooModule
-    end
-    @test Object.keys(FooModule) == [:FooModule]
+    @test Object.keys(FooModule) == ["FooModule"]
 
     delete_context()
 end

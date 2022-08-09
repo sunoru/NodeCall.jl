@@ -30,7 +30,7 @@ end
 
 _jlnode_propertynames(o) = string.(propertynames(o))
 _jlnode_propertynames(o::AbstractDict) = keys(o)
-_jlnode_propertynames(o::Module) = names(o)
+_jlnode_propertynames(o::Module) = string.(names(o))
 jlnode_propertynames(o_ptr::Ptr{Cvoid}) = let o = get_reference(o_ptr)[]
     _jlnode_propertynames(o) |> napi_value
 end
