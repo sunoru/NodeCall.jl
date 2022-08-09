@@ -13,6 +13,7 @@ libjlnode_jll = "e3ef64f0-f261-50ad-b884-29c8a26457f8"
 libnode_jll = "76d26698-d9ba-5ca1-ae24-4ac9393d02a0"
 
 [compat]
+JSON = "0.21"
 julia = "1.7"
 libjlnode_jll = "16"
 libnode_jll = "16"
