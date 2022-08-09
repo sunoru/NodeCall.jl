@@ -70,7 +70,7 @@ Note that it is equivalent to running `npm install` in the current working direc
 the specific version of NodeJS provided by `NodeCall.jl`.
 
 And then you can use the installed package as if you are writing JavaScript.
-In this example, `node_import` or `@node_import` should be used since `boxen` is a ES Module.
+In this example, `node_import` or `@node_import` should be used since `boxen` is an ES Module.
 
 ```julia
 # `node_import` is like the function-like dynamic import in js, so it is asynchronous and should be awaited.
@@ -93,7 +93,7 @@ julia> boxen("Passing options", (padding=1, borderStyle="double")) |> println
 ╚═════════════════════╝
 
 # Alternatively, you can just use a node string:
-julia> println(boxen("Passing a JS Object", node"{padding: 1}"))
+julia> boxen("Passing a JS Object", node"{padding: 1}") |> println
 ┌─────────────────────────┐
 │                         │
 │   Passing a JS Object   │

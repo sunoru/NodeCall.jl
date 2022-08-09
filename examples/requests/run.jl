@@ -4,9 +4,11 @@ NodeCall.initialize()
 
 cd(@__DIR__)
 # Install `node-fetch` with `npm`.
-run(npm`install`)
+NPM.install()
 
-const jsfetch = require("node-fetch")
+# Use dynamic import to load ES modules like `node-fetch`.
+ensure_dynamic_import()
+@node_import jsfetch from "node-fetch"
 const console = node"console"
 
 # `fetch` is Julia's `await`
@@ -40,7 +42,7 @@ p = f1(jsfetch).then() do data
 end.catch() do err
     # The `catch()` method is similar.
     @show err
-    console.log("Catched: \n", err)
+    console.error("Catched: \n", err)
 end
 
 # Should explicitly wait for the promise to complete.

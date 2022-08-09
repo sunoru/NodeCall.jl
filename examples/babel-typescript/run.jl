@@ -4,7 +4,7 @@ NodeCall.initialize()
 
 cd(@__DIR__)
 # Install babel to transpile TypeScript.
-run(npm`install`)
+NPM.install()
 const babel = require("@babel/core")
 
 # Run scripts in TS.
