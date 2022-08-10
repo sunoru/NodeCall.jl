@@ -25,11 +25,14 @@ using Dates
     p3 = JsPromise() do resolve, _
         resolve(true)
     end
+    @test istaskstarted(p3)
     @test @await p3
+    @test istaskdone(p3)
     p4 = JsPromise((_, reject) -> begin
         reject(123)
     end)
     @test_throws NodeError wait(p4)
+    @test istaskfailed(p4)
 
     t = now()
     jl_task = @async sleep(3)
