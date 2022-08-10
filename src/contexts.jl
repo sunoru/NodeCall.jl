@@ -64,7 +64,7 @@ function delete_context(key::AbstractString)
         context = NodeContexts[key]
         pop!(NodeContexts, key)
         if _GLOBAL_ENV.current_context == context
-            @debug "Current context is being deleted"
+            @debug "Current context is being deleted."
             if length(NodeContexts) > 0
                 _GLOBAL_ENV.current_context = last(collect(values(NodeContexts)))
             else

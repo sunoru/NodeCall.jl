@@ -40,6 +40,9 @@ state(promise::JsPromise) = getfield(promise, :state)
 result(promise::JsPromise) = getfield(promise, :result)
 state(promise::ValueTypes) = promise_state(promise)[1]
 result(promise::ValueTypes) = promise_state(promise)[2]
+Base.istaskstarted(::JsPromise) = true
+Base.istaskfailed(promise::JsPromise) = state(promise) ≡ promise_rejected
+Base.istaskdone(promise::JsPromise) = state(promise) ≢ promise_pending
 
 function promise_state(
     promise::ValueTypes;
@@ -68,7 +71,7 @@ Base.fetch(
 
     s = state(promise)
     while s == promise_pending
-        run_node_uvloop(UV_RUN_ONCE)
+        run_node_uvloop(UV_RUN_NOWAIT)
         s = state(promise)
     end
     if s == promise_fulfilled

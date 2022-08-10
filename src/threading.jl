@@ -84,33 +84,19 @@ macro threadsafe(expr)
     _make_threadsafe(expr, nothing)
 end
 
-function _await(x, timeout=-1)
-    if timeout > 0
-        t = current_task()
-        Timer(timeout) do _
-            istaskdone(t) || Base.throwto(t, InterruptException())
-        end
-    end
-    fetch(x)
-end
-function _await(t::Task, timeout=-1)
-    if timeout > 0
-        Timer(timeout) do _
-            istaskdone(t) || Base.throwto(t, InterruptException())
-        end
-    end
+_await(x) = fetch(x)
+function _await(t::Task)
     while !istaskdone(t)
         run_node_uvloop(UV_RUN_NOWAIT)
     end
     fetch(t)
 end
 """
-    @await promise [timeout]
-    @await task [timeout]
+    @await promise
+    @await task
 
 Wait and fetch the result of a `JsPromise` or `Task`. Use it for a `Task` if the `Task` calls node functions.
-If `timeout` is set, it will throw an error if the task is not done within the timeout.
 """
 macro await(expr, timeout=-1)
-    :(_await($(esc(expr)), $(esc(timeout))))
+    :(_await($(esc(expr))))
 end

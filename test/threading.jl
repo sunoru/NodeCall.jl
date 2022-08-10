@@ -8,15 +8,16 @@ include("test_common.jl")
     t = @async tsf(1)
     # Must use `@await` instead of `fetch` since we use node functions in the `Task`.
     @test 2 ≡ @await t
-    @test_throws TaskFailedException @await @async tsf("a")
+    @test_throws TaskFailedException (@await @async tsf("a"))
 
-    function tsf2(x)
+    function unsafe_f2(x)
         o = @threadsafe node"{}"
         @threadsafe o.x = x
         o
     end
-    o = @await @async tsf2(5)
-    @test o.x == 5
+    @test 0.1 == unsafe_f2(0.1).x
+    p = @async @threadsafe unsafe_f2("Hello")
+    @test (@await p).x == "Hello"
 
     delete_context()
 end
