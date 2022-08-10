@@ -133,4 +133,4 @@ It is mainly because in pure Julia it is difficult to handle pointers, especiall
 
 ## License
 
-[MIT License](./LICENSE.md)
+[MIT License](./LICENSE)

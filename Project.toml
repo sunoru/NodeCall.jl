@@ -1,7 +1,7 @@
 name = "NodeCall"
 uuid = "84d67a5e-1aa2-4817-a501-81e0ebf70bff"
 authors = ["Sunoru <s@sunoru.com>"]
-version = "0.2.0"
+version = "1.0.0"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -15,5 +15,5 @@ libnode_jll = "76d26698-d9ba-5ca1-ae24-4ac9393d02a0"
 [compat]
 JSON = "0.21"
 julia = "1.7"
-libjlnode_jll = "16"
+libjlnode_jll = "16.1"
 libnode_jll = "16"
