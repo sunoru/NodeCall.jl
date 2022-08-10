@@ -13,8 +13,17 @@ const server = http.createServer((req, res) -> begin
     res.end("Hello, World!\n")
 end)
 
+url = "http://$hostname:$port/"
 server.listen(port, hostname, () -> begin
-    println("Server running at http://$hostname:$port/")
+    println("Server running at $url")
 end)
+
+@async @threadsafe begin
+    println("Trying to access $url")
+    http.get("$url", (res) -> begin
+        res.setEncoding("utf8")
+        res.on("data", (chunk) -> println("Receive data: ", chunk))
+    end)
+end
 
 run_node_uvloop()

@@ -28,7 +28,7 @@ export napi_value, node_value, value
 export create_object, @new
 export set_copy_array
 export set!, instanceof
-export @node_async, @await, state, result
+export @node_async, state, result
 export node_throw
 include("types/errors.jl")
 include("types/jlnode_helpers.jl")
@@ -45,6 +45,9 @@ include("contexts.jl")
 
 export node_env, node_uvloop, run_node_uvloop
 include("env.jl")
+
+export threadsafe_call, @threadsafe, @await
+include("threading.jl")
 
 export @node_cmd, @npm_cmd, @npx_cmd
 export NPM, npx

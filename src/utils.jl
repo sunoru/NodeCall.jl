@@ -35,7 +35,7 @@ function _napi_call(expr, env = nothing; force_sync=false)
     quote
         let
             $define_vars
-            status = threadsafe_call(() -> $ccall_func, $env, $force_sync)
+            status = $ccall_func
             if status ≢ NapiTypes.napi_ok
                 @debug status
                 throw_error($env)
@@ -51,42 +51,6 @@ end
 
 macro napi_call(expr)
     _napi_call(expr)
-end
-
-macro napi_call_sync(env, expr)
-    _napi_call(expr, esc(env), force_sync=true)
-end
-
-macro napi_call_sync(expr)
-    _napi_call(expr, force_sync=true)
-end
-
-const _JLNODE_RUNNING_SYMBOL = :JLNODE_RUNNING
-function threadsafe_call(func, env, force_sync=false)
-    if force_sync || current_task() == _GLOBAL_TASK[]
-        return func()
-    end
-    tls = task_local_storage()
-    if _JLNODE_RUNNING_SYMBOL ∈ keys(tls)
-        return func()
-    end
-    tls[_JLNODE_RUNNING_SYMBOL] = true
-    ch = Channel{NapiStatus}(1)
-    function wrapper()
-        put!(ch, func())
-        nothing
-    end
-    cf = pointer(reference(wrapper))
-    try
-        status = @ccall :libjlnode.threadsafe_call(env::NapiEnv, cf::Ptr{Cvoid})::NapiStatus
-        if status ≢ NapiTypes.napi_ok
-            throw_error(env)
-        end
-        return take!(ch)
-    finally
-        dereference(cf)
-        delete!(tls, _JLNODE_RUNNING_SYMBOL)
-    end
 end
 
 function throw_error(env::NapiEnv = node_env())
