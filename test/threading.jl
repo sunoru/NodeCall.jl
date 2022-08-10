@@ -11,7 +11,7 @@ include("test_common.jl")
     @test_throws TaskFailedException (@await @async tsf("a"))
 
     function unsafe_f2(x)
-        o = @threadsafe node"{}"
+        o = node"{}"
         @threadsafe o.x = x
         o
     end
