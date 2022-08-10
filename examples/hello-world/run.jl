@@ -25,5 +25,3 @@ end)
         res.on("data", (chunk) -> println("Receive data: ", chunk))
     end)
 end
-
-run_node_uvloop()

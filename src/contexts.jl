@@ -1,3 +1,5 @@
+const _CURRENT_CONTEXT = Ref{NodeObject}()
+
 const NodeContexts = Dict{String, NodeObject}()
 @global_js_const _VM = "require('vm')"
 @global_js_const _ASSIGN_DEFAULTS = """(() => {
@@ -23,20 +25,20 @@ const NodeContexts = Dict{String, NodeObject}()
     }
 })()"""
 
-current_context() = _GLOBAL_ENV.current_context
+current_context() = _CURRENT_CONTEXT[]
 
 get_context(key::AbstractString) = NodeContexts[key]
 
 function switch_context(key::AbstractString)
     context = get_context(key)
-    _GLOBAL_ENV.current_context = context
+    _CURRENT_CONTEXT[] = context
     context
 end
 function switch_context(context)
     if context ∉ values(NodeContexts)
         NodeContexts[string(uuid4())] = context
     end
-    _GLOBAL_ENV.current_context = context
+    _CURRENT_CONTEXT[] = context
     context
 end
 
@@ -63,10 +65,10 @@ function delete_context(key::AbstractString)
     if haskey(NodeContexts, key)
         context = NodeContexts[key]
         pop!(NodeContexts, key)
-        if _GLOBAL_ENV.current_context == context
+        if _CURRENT_CONTEXT[] == context
             @debug "Current context is being deleted."
             if length(NodeContexts) > 0
-                _GLOBAL_ENV.current_context = last(collect(values(NodeContexts)))
+                _CURRENT_CONTEXT[] = last(collect(values(NodeContexts)))
             else
                 new_context()
             end

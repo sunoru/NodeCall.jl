@@ -3,20 +3,16 @@ import Libdl
 
 using libjlnode_jll
 
-mutable struct EnvironmentConfig
-    env::NapiEnv
-    loop::Ptr{Cvoid}
-    current_context::NodeObject
-end
-
-const _GLOBAL_ENV = EnvironmentConfig(C_NULL, C_NULL, NodeObject())
-node_env() = _GLOBAL_ENV.env
-node_uvloop() = _GLOBAL_ENV.loop
+const _NODE_ENV = Ref{NapiEnv}()
+const _NODE_UVLOOP = Ref(C_NULL)
 const _INITIALIZED = Ref(false)
-initialized() = _INITIALIZED[]
 const _STARTED_FROM_NODE = Ref(false)
-started_from_node() = _STARTED_FROM_NODE[]
 const _GLOBAL_TASK = Ref{Task}()
+
+node_env() = _NODE_ENV[]
+node_uvloop() = _NODE_UVLOOP[]
+initialized() = _INITIALIZED[]
+started_from_node() = _STARTED_FROM_NODE[]
 
 @enum UvRunMode begin
   UV_RUN_DEFAULT = 0
@@ -45,10 +41,10 @@ function initialize(env=nothing; node_args=String[])
     else
         start_node(node_args)
     end
-    _GLOBAL_ENV.env = env
-    _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
+    _NODE_ENV[] = env
+    _NODE_UVLOOP[] = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
     ret = @ccall :libjlnode.initialize(
-        _GLOBAL_ENV.loop::Ptr{Cvoid},
+        _NODE_UVLOOP[]::Ptr{Cvoid},
         pointer_from_objref(NodeCall)::Ptr{Cvoid}
     )::Cint
     @assert ret == 0
@@ -93,7 +89,5 @@ function __init__()
     if isinteractive() && get(ENV, "JLNODE_DISABLE_AUTO_START", "0") == "0"
         initialize()
     end
-    finalizer(_GLOBAL_ENV) do _
-        dispose()
-    end
+    atexit(dispose)
 end

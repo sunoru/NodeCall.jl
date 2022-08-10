@@ -9,4 +9,3 @@ it can be very similar to JavaScript code, except for the following differences:
 - All string literals should be written within double quotation marks.
 If string interpolation is needed, instead of `` `${x}` ``, `"$(x)"` should be used.
 - Anonymous functions are defined as `(x) -> begin end` instead of `(x) => {}`.
-- You need to explicitly invoke `run_node_uvloop()` to keep the node instance running.
