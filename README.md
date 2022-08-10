@@ -105,12 +105,17 @@ See [`examples/`](./examples) or [`test/runtests.jl`](./test/runtests.jl) for mo
 
 ## Known Issues
 
-One important problem of `NodeCall.jl` is that it cannot work with Julia's
+~~One important problem of `NodeCall.jl` is that it cannot work with Julia's
 multi-thread/process functions, as well as the asynchronous methods involving `Task`s.
 However, asynchronous features in NodeJS (`Promise`s) works fine by
-awaiting them explicitly.
+awaiting them explicitly.~~
 
-If you need to asynchronously access the NodeJS environment, one way is to use `@node_async`.
+You can now use `@threadsafe f(args...)` to make/call a function in a threadsafe manner.
+
+You have to use `@await` instead of `wait` or `fetch` to wait for a `Task` to finish if
+the `Task` accesses the NodeJS environment, since it calls `run_node_uvloop` automatically.
+
+Another way to asynchronously access the NodeJS environment is to use `@node_async`.
 `@node_async` works like `@async` in Julia, but instead of scheduling a `Task` in Julia,
 it creates a `JsPromise` to wait on. Thus, the tasks are managed by the NodeJS side.
 

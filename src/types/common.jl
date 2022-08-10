@@ -57,6 +57,13 @@ Base.show(io::IO, v::JsObjectType) = print(io, string(
     typeof(v), ": ",
     string_pointer(getfield(v, :ref))
 ))
+# TODO: If we can get uvloop running automatically, we can use this.
+# @global_js_const _JS_INSPECT = """((util) => (x) => util.inspect(
+#     x, { colors:true }
+# ))(require('util'))"""
+# Base.show(io::IO, v::JsObjectType) = print(io,
+#     threadsafe_call(() -> _JS_INSPECT(v), String)
+# )
 
 function Base.get(
     o::ValueTypes, key, default=nothing;
