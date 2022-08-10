@@ -41,7 +41,7 @@ value(::Type{NodeValueTemp}, v::NapiValue; tempname=nothing) = NodeValueTemp(v, 
 node_value_finalizer(v::NodeObject) = if initialized()
     ref = getfield(v, :ref)
     if ref != C_NULL
-        @napi_call napi_delete_reference(ref::NapiRef)
+        @napi_call_sync napi_delete_reference(ref::NapiRef)
     end
 end
 node_value_finalizer(v::NodeValueTemp) = if initialized()

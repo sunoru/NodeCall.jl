@@ -46,3 +46,8 @@ function jlnode_hasproperty(o_ptr::Ptr{Cvoid}, k_ptr::Ptr{Cvoid})
     k = value(convert(NapiValue, k_ptr))
     _jlnode_hasproperty(o, k) |> napi_value
 end
+
+function jlnode_call_threadsafe(f_ptr::Ptr{Cvoid})
+    f = get_reference(f_ptr)[]
+    f()
+end

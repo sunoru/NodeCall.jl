@@ -1,7 +1,7 @@
 module NPM
 
 using JSON
-import NodeCall: @npm_cmd
+using NodeCall: @npm_cmd
 
 const COMMANDS = let o = 0
     commands = String[]
@@ -41,7 +41,7 @@ for cmd in COMMANDS
     end
 end
 
-installed_packages(is_global=false) = ls("--depth=0", "--json", is_global ? "--location=global" : "") do json
+installed_packages(is_global=false) = NPM.ls("--depth=0", "--json", is_global ? "--location=global" : "") do json
     data = JSON.parse(json)
     Base.get(data, "dependencies", Dict{String, Any}())
 end

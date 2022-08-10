@@ -16,6 +16,7 @@ const _INITIALIZED = Ref(false)
 initialized() = _INITIALIZED[]
 const _STARTED_FROM_NODE = Ref(false)
 started_from_node() = _STARTED_FROM_NODE[]
+const _GLOBAL_TASK = Ref{Task}()
 
 @enum UvRunMode begin
   UV_RUN_DEFAULT = 0
@@ -37,14 +38,20 @@ function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     # end
 end
 
-function initialize(env=nothing; kwargs...)
+"""
+    initialize(env=nothing; node_args=[])
+
+Must be called in the main thread.
+"""
+function initialize(env=nothing; node_args=String[])
     initialized() && return
+    _GLOBAL_TASK[] = current_task()
     Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL)
     _STARTED_FROM_NODE[] = !isnothing(env)
     env = if started_from_node()
         reinterpret(NapiEnv, UInt64(env))
     else
-        start_node(; kwargs...)
+        start_node(node_args)
     end
     _GLOBAL_ENV.env = env
     _GLOBAL_ENV.loop = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
