@@ -14,8 +14,9 @@ include("test_common.jl")
     include("import.jl")
     include("externals.jl")
     include("contexts.jl")
-    include("internals.jl")
     include("threading.jl")
+
+    include("internals.jl")
 
     NodeCall.dispose()
 end

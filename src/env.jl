@@ -28,14 +28,6 @@ end
 function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     node_loop = node_uvloop()
     @ccall :libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
-    # @async begin
-    #     node_loop = node_uvloop()
-    #     while initialized()
-    #         yield()
-    #         # UV_RUN_NOWAIT
-    #         @ccall :libjlnode.uv_run(node_loop::Ptr{Cvoid}, 2::Cint)::Cint
-    #     end
-    # end
 end
 
 """

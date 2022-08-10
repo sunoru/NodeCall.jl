@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  JULIA_DEBUG: NodeCall
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
