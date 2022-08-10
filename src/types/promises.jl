@@ -30,7 +30,7 @@ JsPromise(ref::NodeObject) = @with_scope begin
     promise
 end
 
-@global_js_const _JS_PROMISE = "Promise"
+@global_node_const _JS_PROMISE = "Promise"
 JsPromise(f::Function) = @new _JS_PROMISE(f)
 
 napi_value(promise::JsPromise) = convert(NapiValue, getfield(promise, :ref))
@@ -55,7 +55,7 @@ function promise_state(
     state[], result_
 end
 
-@global_js_const _JS_WRAP_PROMISE = """(promise, resolve, reject) => {
+@global_node_const _JS_WRAP_PROMISE = """(promise, resolve, reject) => {
     const p = promise
         .then(resolve).catch(reject)
     setTimeout(() => {}, 0)
@@ -85,7 +85,7 @@ end
 
 Base.wait(promise::ValueTypes) = (fetch(promise); nothing)
 
-@global_js_const _JS_MAKE_ASYNC = "(f) => new Promise((resolve, reject) => {
+@global_node_const _JS_MAKE_ASYNC = "(f) => new Promise((resolve, reject) => {
     setTimeout(() => {
         try {
             resolve(f())

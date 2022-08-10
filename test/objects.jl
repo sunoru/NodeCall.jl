@@ -3,6 +3,10 @@ using Dates
 using JSON
 
 module FooModule
+using NodeCall
+export SOME_CONST
+NodeCall.@global_node_const SOME_CONST = "{x: 1}"
+__init__() = NodeCall.initialize_node_consts()
 end
 
 @testset "objects" begin
@@ -120,7 +124,8 @@ end
 
     @test length(node"{length: 5}") == 5
 
-    @test Object.keys(FooModule) == ["FooModule"]
+    @test FooModule.SOME_CONST.x == 1
+    @test Object.keys(FooModule) == ["FooModule", "SOME_CONST"]
 
     delete_context()
 end

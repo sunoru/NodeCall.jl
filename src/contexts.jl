@@ -1,8 +1,8 @@
 const _CURRENT_CONTEXT = Ref{NodeObject}()
 
 const NodeContexts = Dict{String, NodeObject}()
-@global_js_const _VM = "require('vm')"
-@global_js_const _ASSIGN_DEFAULTS = """(() => {
+@global_node_const _VM = "require('vm')"
+@global_node_const _ASSIGN_DEFAULTS = """(() => {
     const keys = ['console']
     // Pass global functions
     for (const key of Object.keys(globalThis)) {

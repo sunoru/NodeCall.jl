@@ -54,25 +54,41 @@ function value(napi_value::NapiValue; this=nothing)
     end
 end
 
-macro global_js_const(def, is_object=true)
+const _NODE_CONST_SYMBOL = gensym()
+"""
+    @global_node_const CONST_NAME = "JavaScript code..." [is_object=true]
+
+A helper to define a global constant in your module that will be initialized automatically when the module is
+loaded. You need to pass `false` in the end if the constant value is not an `object`.
+
+If `NodeCall` is initialized before your module. You need to call `NodeCall.initialize_node_consts()` manually.
+"""
+macro global_node_const(def, is_object=true)
     @assert def isa Expr && def.head == :(=) && length(def.args) == 2
     typ = is_object ? :NodeObject : :NodeValueTemp
     name, script = def.args
+    name = esc(name)
     # Just a temporary use of `ObjectReference`
-    esc(quote
+    quote
         const $name = $typ()
-        if !haskey(ObjectReference, :global_init)
-            ObjectReference[:global_init] = Ref(Tuple{
+        if !haskey(ObjectReference, _NODE_CONST_SYMBOL)
+            ObjectReference[_NODE_CONST_SYMBOL] = Ref(Tuple{
                 Union{NodeObject, NodeValueTemp},
                 String
             }[])
         end
-        push!(ObjectReference[:global_init][], ($name, $script))
-    end)
+        push!(ObjectReference[_NODE_CONST_SYMBOL][], ($name, $script))
+    end
 end
 
-_initialize_globals() = @with_scope begin
-    for (ref, script) in ObjectReference[:global_init][]
+"""
+    NodeCall.initialize_node_consts()
+
+See `NodeCall.@global_node_const`.
+"""
+initialize_node_consts() = @with_scope begin
+    haskey(ObjectReference, _NODE_CONST_SYMBOL) || return
+    for (ref, script) in ObjectReference[_NODE_CONST_SYMBOL][]
         nv = node_eval(script, RESULT_RAW, context=nothing)
         if ref isa NodeObject
             v = @napi_call napi_create_reference(nv::NapiValue, 1::UInt32)::NapiRef
@@ -82,5 +98,6 @@ _initialize_globals() = @with_scope begin
             setfield!(ref, :tempname, v)
         end
     end
-    delete!(ObjectReference, :global_init)
+    delete!(ObjectReference, _NODE_CONST_SYMBOL)
+    nothing
 end

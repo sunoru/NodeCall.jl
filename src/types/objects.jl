@@ -35,9 +35,9 @@ create_object(
     end
 end
 
-@global_js_const _JS_OBJECT = "Object"
-@global_js_const _JS_OBJECT_KEYS_LENGTH = "(o) => Object.keys(o).length"
-@global_js_const _JS_OBJECT_PROXY = raw"""(() => {
+@global_node_const _JS_OBJECT = "Object"
+@global_node_const _JS_OBJECT_KEYS_LENGTH = "(o) => Object.keys(o).length"
+@global_node_const _JS_OBJECT_PROXY = raw"""(() => {
     const preserved_keys = [
         "__get__", "__set__", "__has__", "__keys__",
         "__jl_type", "__jl_ptr"
@@ -81,7 +81,7 @@ end
         }
     })
 })()"""
-@global_js_const _JS_SET_ADD = raw"(m, v) => m.add(v)"
+@global_node_const _JS_SET_ADD = "(m, v) => m.add(v)"
 
 create_object_dict(x::AbstractDict) = create_object_mutable(x)
 function create_object_set(x::AbstractSet)
@@ -227,7 +227,7 @@ value(::Type{Set}, v::NapiValue) = @with_scope is_set(v) ? make_set(v) : Set(key
 Base.Dict(v::ValueTypes; depth=2) = @with_scope _dict_value(napi_value(v), depth)
 Base.Set(v::ValueTypes) = value(Set, v)
 
-@global_js_const _MAKE_DICT = """(v) => {
+@global_node_const _MAKE_DICT = """(v) => {
     assert(v instanceof Map || v instanceof WeakMap)
     const ks = []
     const vs = []
@@ -242,7 +242,7 @@ function make_dict(v::NapiValue)
     Dict(zip(ks, vs))
 end
 
-@global_js_const _MAKE_SET = """(v) => {
+@global_node_const _MAKE_SET = """(v) => {
     assert(v instanceof Set || v instanceof WeakSet)
     const vs = []
     for (const x of v) {

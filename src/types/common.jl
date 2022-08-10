@@ -24,11 +24,11 @@ end
 @wrap_is_type error
 @wrap_is_type promise
 
-@global_js_const _JS_MAP = "Map"
+@global_node_const _JS_MAP = "Map"
 is_map(v::NapiValue) = instanceof(v, _JS_MAP)
-@global_js_const _JS_SET = "Set"
+@global_node_const _JS_SET = "Set"
 is_set(v::NapiValue) = instanceof(v, _JS_SET)
-@global_js_const _JS_ITERATOR_SYMBOL = "Symbol.iterator" false
+@global_node_const _JS_ITERATOR_SYMBOL = "Symbol.iterator" false
 is_iterator(v::NapiValue) = is_function(get(v, _JS_ITERATOR_SYMBOL, nothing; result=RESULT_RAW))
 
 for func in (
@@ -58,7 +58,7 @@ Base.show(io::IO, v::JsObjectType) = print(io, string(
     string_pointer(getfield(v, :ref))
 ))
 # TODO: If we can get uvloop running automatically, we can use this.
-# @global_js_const _JS_INSPECT = """((util) => (x) => util.inspect(
+# @global_node_const _JS_INSPECT = """((util) => (x) => util.inspect(
 #     x, { colors:true }
 # ))(require('util'))"""
 # Base.show(io::IO, v::JsObjectType) = print(io,

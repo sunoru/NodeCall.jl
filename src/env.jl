@@ -54,7 +54,7 @@ function initialize(env=nothing; node_args=String[])
         globalThis.assert = require('assert').strict
     })()""", RESULT_RAW, context=nothing)
     ensure_dynamic_import()
-    _initialize_globals()
+    initialize_node_consts()
     new_context()
     _INITIALIZED[] = true
     # run_node_uvloop()

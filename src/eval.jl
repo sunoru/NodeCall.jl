@@ -21,7 +21,7 @@ function with_result(f, type::ResultType=RESULT_VALUE; this=nothing)
 end
 
 const DYNAMIC_IMPORT = "__jlnode_import"
-@global_js_const _RUN_IN_VM = """(vm, script, context) => {
+@global_node_const _RUN_IN_VM = """(vm, script, context) => {
     return vm.runInContext(script, context, {
         importModuleDynamically(m) {
             return $(DYNAMIC_IMPORT)(m)
@@ -65,7 +65,7 @@ end
 
 const LOCALS_NAME = "__jlnode_locals"
 const LOCALS_COUNTER = Ref(0)
-@global_js_const _JS_CREATE_LOCALS = """(ctx, i) => {
+@global_node_const _JS_CREATE_LOCALS = """(ctx, i) => {
     if (!("$LOCALS_NAME" in ctx)) {
         ctx.$LOCALS_NAME = {}
     }
