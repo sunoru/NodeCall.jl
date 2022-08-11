@@ -3,26 +3,20 @@ const _CURRENT_CONTEXT = Ref{NodeObject}()
 const NodeContexts = Dict{String, NodeObject}()
 @global_node_const _VM = "require('vm')"
 @global_node_const _ASSIGN_DEFAULTS = """(() => {
-    const keys = ['console']
+    const defaults = { console: globalThis.console }
     // Pass global functions
     for (const key of Object.keys(globalThis)) {
         if (key !== 'global' && !key.startsWith('_')) {
-            keys.push(key)
+            defaults[key] = globalThis[key]
         }
     }
     // Pass all the types (the global objects whose names start with a capital letter)
     for (const key of Object.getOwnPropertyNames(globalThis)) {
         if (key[0] === key[0].toUpperCase() && !key.startsWith('_')) {
-            keys.push(key)
-        }
-    }
-    return (ctx) => {
-        const defaults = new Object()
-        for (const key of keys) {
             defaults[key] = globalThis[key]
         }
-        return Object.assign(defaults, ctx)
     }
+    return (ctx) => Object.assign(ctx, defaults)
 })()"""
 
 current_context() = _CURRENT_CONTEXT[]

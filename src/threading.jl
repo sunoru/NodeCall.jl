@@ -91,6 +91,7 @@ function _await(t::Task)
     end
     fetch(t)
 end
+
 """
     @await promise
     @await task
