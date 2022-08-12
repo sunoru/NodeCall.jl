@@ -41,13 +41,22 @@ function call_function(
     func_ptr::Ptr{Cvoid},
     args_ptr::Ptr{Cvoid},
     argc::Csize_t,
-    _recv::Ptr{Cvoid}
+    recv::Ptr{Cvoid}
 )
-    func = get_reference(func_ptr)
+    func = get_reference(func_ptr)[]
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
+    this = convert(NapiValue, recv) |> value
     try
-        NapiValue(func[](args...))
+        try
+            func(args...; this=this)
+        catch e
+            if e isa MethodError && :this ∈ keys(e.args[1])
+                func(args...)
+            else
+                rethrow(e)
+            end
+        end |> NapiValue
     catch e
         node_throw(e)
         nothing

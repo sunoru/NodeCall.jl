@@ -3,7 +3,10 @@ const _CURRENT_CONTEXT = Ref{NodeObject}()
 const NodeContexts = Dict{String, NodeObject}()
 @global_node_const _VM = "require('vm')"
 @global_node_const _ASSIGN_DEFAULTS = """(() => {
-    const defaults = { console: globalThis.console }
+    const defaults = {
+        console: globalThis.console,
+        process: globalThis.process
+    }
     // Pass global functions
     for (const key of Object.keys(globalThis)) {
         if (key !== 'global' && !key.startsWith('_')) {
