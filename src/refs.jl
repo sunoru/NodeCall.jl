@@ -13,9 +13,10 @@ const ObjectReference = IdDict{Any, RefValue}()
 # Pointers -> Reference
 const ReferenceCache = Dict{Ptr{Cvoid}, ReferenceEntry}()
 
-const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}}
+# const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}}
+const TypedCompatibleArray{T} = Union{DenseArray{T}, Base.ReinterpretArray{T}, SubArray{T}}
 _get_pointer(ref::RefValue{T}) where T = Ptr{Cvoid}(pointer_from_objref(ismutabletype(T) ? ref[] : ref))
-_get_pointer(ref::RefValue{T}) where T <: TypedCompatibleArray = Ptr{Cvoid}(pointer(ref[]))
+_get_pointer(ref::RefValue{<:TypedCompatibleArray}) = Ptr{Cvoid}(pointer(ref[]))
 get_reference(id::Union{UInt64, Ptr}) = get(ReferenceCache, Ptr{Cvoid}(id), nothing)
 
 delete_reference(id::Union{UInt64, Ptr}) = let ref = pop!(ReferenceCache, Ptr{Cvoid}(id), nothing)

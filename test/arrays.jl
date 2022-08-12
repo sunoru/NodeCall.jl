@@ -36,5 +36,13 @@ using Random
     @test Tuple(js_buffer) == Tuple(zeros(UInt8, 5))
     @test value(Tuple{Int, Int}, node"[1,2]"o) == (1, 2)
 
+    # Bug fixed: reuse the same arraybuffer for the same array.
+    js_id = node"arr => arr"
+    @test pointer(js_id(arr1)) ≡ pointer(arr1)
+    @test pointer(js_id(arr1)) ≡ pointer(arr1)
+
+    subarr1 = arr1[5:10]
+    @test pointer(js_id(subarr1)) ≡ pointer(subarr1)
+
     delete_context()
 end

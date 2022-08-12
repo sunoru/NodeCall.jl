@@ -59,9 +59,25 @@ function _napi_value(v::AbstractArray)
     nv
 end
 
-arraybuffer_finalizer(ptr) = dereference(ptr)
 const COPY_ARRAY = Ref(false)
 set_copy_array(copy::Bool) = COPY_ARRAY[] = copy
+
+const ExternalArrayBuffers = Dict{Ptr{Cvoid}, NodeObject}()
+function arraybuffer_finalizer(ptr)
+    dereference(ptr)
+    haskey(ExternalArrayBuffers, ptr) || return
+    delete!(ExternalArrayBuffers, ptr)
+    nothing
+end
+
+function _create_external_arraybuffer(v::TypedCompatibleArray, byte_length)
+    ptr = Ptr{Cvoid}(pointer(v))
+    no = get!(ExternalArrayBuffers, ptr) do
+        nv = @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
+        NodeObject(nv)
+    end
+    napi_value(no)
+end
 
 function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=COPY_ARRAY[])
     isnothing(typedarray_type) && return _napi_value(v)
@@ -74,8 +90,7 @@ function _napi_value(v::TypedCompatibleArray, typedarray_type; copy_array=COPY_A
         @ccall memcpy(data[]::Ptr{Cvoid}, v::Ptr{Cvoid}, byte_length::Csize_t)::Ptr{Cvoid}
         ab
     else
-        ptr = pointer(reference(v))
-        @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
+        _create_external_arraybuffer(v, byte_length)
     end
     nv = @napi_call napi_create_typedarray(
         typedarray_type::NapiTypedArrayType, n::Csize_t,
@@ -91,7 +106,7 @@ function napi_value(
     isnothing(typedarray_type) || return _napi_value(v, typedarray_type; copy_array=copy_array)
     _napi_value(v, if T == Int8
         NapiTypes.napi_int8_array
-    elseif T == UInt8 
+    elseif T == UInt8
         NapiTypes.napi_uint8_array
     elseif T == Int16
         NapiTypes.napi_int16_array
@@ -118,23 +133,23 @@ napi_value(v::AbstractArray) = _napi_value(v, nothing)
 const UnsafelyWrapped = Dict{Ptr{Cvoid}, NodeObject}()
 array_finalizer(arr) = if initialized()
     ptr = Ptr{Cvoid}(pointer(arr))
-    if ptr in keys(UnsafelyWrapped)
-        ref = UnsafelyWrapped[ptr]
-        if dec_ref(ref) == 0
-            deleteat!(UnsafelyWrapped, ptr)
-        end
+    haskey(UnsafelyWrapped, ptr) || return
+    ref = UnsafelyWrapped[ptr]
+    if dec_ref(ref) == 0
+        delete!(UnsafelyWrapped, ptr)
     end
 end
 function unsafe_wrap_array(nv::NapiValue, ::Type{T}, data::Ptr, len) where T
-    data = Ptr{Cvoid}(data)
-    ref = if data in keys(UnsafelyWrapped)
-        ref = UnsafelyWrapped[data]
+    ptr = Ptr{Cvoid}(data)
+    ref = if haskey(UnsafelyWrapped, ptr)
+        ref = UnsafelyWrapped[ptr]
         inc_ref(ref)
         ref
     else
-        NodeObject(nv)
+        UnsafelyWrapped[ptr] = NodeObject(nv)
     end
-    arr = unsafe_wrap(Array{T}, Ptr{T}(data), len)
+    own = get_reference(ptr) |> !isnothing
+    arr = unsafe_wrap(Array{T}, Ptr{T}(data), len, own=own)
     finalizer(array_finalizer, arr)
 end
 Base.Array(v::ValueTypes) = value(Array, v)
