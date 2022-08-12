@@ -25,6 +25,7 @@ value(v::ValueTypes; this=nothing) = @with_scope value(NapiValue(v), this=this)
 JsValue(::Type{T}, v) where T = value(T, v)
 Base.convert(::Type{Any}, v::ValueTypes) = v
 Base.convert(::Type{T}, v::ValueTypes) where T = value(T, v)
+Base.convert(::Type{>:Nothing}, v::ValueTypes) = v
 value(::Type{T}, v::T) where T = v
 value(::Type{T}, v) where T = @with_scope value(T, NapiValue(v))
 value(::Type{T}, v::NapiValue) where T = error("Unimplemented to convert a NapiValue to $T")

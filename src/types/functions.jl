@@ -37,28 +37,36 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
     )::NapiValue
 end
 
+const ThisObjects = Dict{Task, Any}()
+function this()
+    tls = task_local_storage()
+    get(tls, :jlnode_this, nothing)
+end
+
 function call_function(
     func_ptr::Ptr{Cvoid},
     args_ptr::Ptr{Cvoid},
     argc::Csize_t,
-    recv::Ptr{Cvoid}
+    recv::Ptr{Cvoid},
+    result::Ptr{Cvoid}
 )
+    result = convert(Ptr{NapiValue}, result)
     func = get_reference(func_ptr)[]
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
     this = convert(NapiValue, recv) |> value
+    function f()
+        task_local_storage(:jlnode_this, this) do
+            func(args...)
+        end
+    end
     try
-        try
-            func(args...; this=this)
-        catch e
-            if e isa MethodError && :this ∈ keys(e.args[1])
-                func(args...)
-            else
-                rethrow(e)
-            end
-        end |> NapiValue
+        r = NapiValue(f())
+        unsafe_store!(result, r)
+        r
     catch e
         node_throw(e)
+        unsafe_store!(result, C_NULL)
         nothing
     end
 end

@@ -38,14 +38,15 @@ include("test_common.jl")
         @test x == y
     end
 
-    # Allow to pass in `this` by declaring a keyword argument
+    # Test `this()`
     js_has_this = node"{x: 5}"
-    js_has_this.f = function (y; this)
-        (y + this.x, this)
+    js_has_this.f = function (y)
+        t = this()
+        (y + t.x, t)
     end
-    result, this = js_has_this.f(3)
+    result, t = js_has_this.f(3)
     @test result == 8
-    @test this == js_has_this
+    @test t == js_has_this
 
     delete_context()
 end

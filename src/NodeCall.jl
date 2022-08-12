@@ -28,6 +28,7 @@ export napi_value, node_value, value
 export create_object, @new
 export set_copy_array
 export set!, instanceof
+export this
 export @node_async, state, result
 export node_throw
 include("types/errors.jl")
