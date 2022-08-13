@@ -12,5 +12,10 @@ using Random
     @test sprint(show, ox) == "NodeExternal: Base.RefValue{Int64}(123)"
     @test node_value(ox) ≡ ox
 
+    ptr = backtrace()[1]
+    ptr_int = Ptr{Int}(ptr)
+    @test ptr ≡ value(napi_value(ptr))
+    @test ptr_int ≡ value(napi_value(ptr_int))
+
     delete_context()
 end

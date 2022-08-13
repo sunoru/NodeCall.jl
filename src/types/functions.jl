@@ -37,10 +37,9 @@ value(::Type{JsFunction}, v::NapiValue; this=nothing) = JsFunction(
     )::NapiValue
 end
 
-const ThisObjects = Dict{Task, Any}()
 function this()
     tls = task_local_storage()
-    get(tls, :jlnode_this, nothing)
+    get(tls, :jlnode_this, [nothing])[end]
 end
 
 function call_function(
@@ -55,19 +54,21 @@ function call_function(
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
     this = convert(NapiValue, recv) |> value
-    function f()
-        task_local_storage(:jlnode_this, this) do
-            func(args...)
-        end
-    end
     try
-        r = NapiValue(f())
+        tls = task_local_storage()
+        thises = get!(tls, :jlnode_this) do
+            Any[]
+        end
+        push!(thises, this)
+        r = NapiValue(func(args...))
         unsafe_store!(result, r)
         r
     catch e
         node_throw(e)
         unsafe_store!(result, C_NULL)
         nothing
+    finally
+        pop!(thises)
     end
 end
 

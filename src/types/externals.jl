@@ -10,7 +10,9 @@ NodeExternal(nv::NapiValue) = NodeExternal(@napi_call napi_get_value_external(nv
 
 Base.pointer(v::NodeExternal) = getfield(v, :ptr)
 value(v::NodeExternal) = let t = get_reference(pointer(v))
-    isnothing(t) ? nothing : t[]
+    isnothing(t) && return nothing
+    t[] isa PointerWrapper && return t[].ptr
+    t[]
 end
 
 Base.show(io::IO, v::NodeExternal) = print(io, string(
@@ -28,3 +30,9 @@ function value(::Type{NodeExternal}, nv::NapiValue)
     v = value(e)
     isnothing(v) ? e : v
 end
+
+# Let `Ptr`s be NodeExternals
+struct PointerWrapper{T}
+    ptr::Ptr{T}
+end
+napi_value(v::Ptr) = napi_value(NodeExternal(PointerWrapper(v)))

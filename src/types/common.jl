@@ -76,7 +76,8 @@ function Base.get(
     end
 end
 set!(o::ValueTypes, key, value) = @with_scope begin
-    @napi_call napi_set_property(o::NapiValue, key::NapiValue, value::NapiValue)
+    nv = napi_value(value)
+    @napi_call napi_set_property(o::NapiValue, key::NapiValue, nv::NapiValue)
 end
 Base.haskey(o::ValueTypes, key) = @with_scope begin
     @napi_call napi_has_property(o::NapiValue, key::NapiValue)::Bool
@@ -95,7 +96,8 @@ Base.get(
     nv
 end
 set!(o::ValueTypes, key::AbstractString, value) = @with_scope begin
-    @napi_call napi_set_named_property(o::NapiValue, key::Cstring, value::NapiValue)
+    nv = napi_value(value)
+    @napi_call napi_set_named_property(o::NapiValue, key::Cstring, nv::NapiValue)
 end
 Base.haskey(o::ValueTypes, key::AbstractString) = @with_scope begin
     @napi_call napi_has_named_property(o::NapiValue, key::Cstring)::Bool
@@ -113,7 +115,8 @@ Base.get(
     nv
 end
 set!(o::ValueTypes, key::Integer, value) = @with_scope begin
-    @napi_call napi_set_element(o::NapiValue, key::UInt32, value::NapiValue)
+    nv = napi_value(value)
+    @napi_call napi_set_element(o::NapiValue, key::UInt32, nv::NapiValue)
 end
 Base.haskey(o::ValueTypes, key::Integer) = @with_scope begin
     @napi_call napi_has_element(o::NapiValue, key::UInt32)::Bool

@@ -76,4 +76,5 @@ end
     @test value(Int, node"123"o) == 123
     @test value(Int, node"123n"r, is_bigint=true) == 123
     @test value(UInt, node"123n"o) == UInt(123)
+
 end
