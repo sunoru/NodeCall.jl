@@ -1,8 +1,8 @@
 using NodeCall
 
+cd(@__DIR__)
 NodeCall.initialize()
 
-cd(@__DIR__)
 # Install babel to transpile TypeScript.
 NPM.install()
 const babel = require("@babel/core")

@@ -1,4 +1,19 @@
-require(id::AbstractString; result=RESULT_VALUE) = node_eval("globalThis.require('$(id)')", result)
+@global_node_const _REQUIRE_IN_PATH = """(() => {
+    const { resolve } = require('path')
+    return (id, path) => require('module')
+        .createRequire(resolve(path) + '/')(id)
+})()"""
+function require(
+    id::AbstractString;
+    path=nothing,
+    result=RESULT_VALUE
+)
+    if isnothing(path)
+        node_eval("globalThis.require('$(id)')", result)
+    else
+        _REQUIRE_IN_PATH(id, path; result = result)
+    end
+end
 
 node_import(id::AbstractString; result=RESULT_VALUE) = node_eval("import('$(id)')", result)
 
@@ -58,7 +73,7 @@ const IMPORT_UTIL_SOURCE_TEXT = "exports.node_import = (s) => import(s)"
 
 A workaround for "invalid host defined options" if directly using dynamic import.
 """
-function ensure_dynamic_import(path=pwd())
+function ensure_dynamic_import(path=pwd(); context=nothing)
     tmpfile, file = "", ""
     while true
         tmpfile, io = mktemp(cleanup=true)
@@ -67,8 +82,11 @@ function ensure_dynamic_import(path=pwd())
         isfile(file) || break
     end
     mv(tmpfile, file)
-    write(file, IMPORT_UTIL_SOURCE_TEXT)
-    node_eval("(() => {globalThis.$(DYNAMIC_IMPORT) = require('$(file)').node_import})()", context=nothing)
-    mv(file, tmpfile)
+    try
+        write(file, IMPORT_UTIL_SOURCE_TEXT)
+        node_eval("(() => {globalThis.$(DYNAMIC_IMPORT) = require('$(file)').node_import})()", context=context)
+    finally
+        mv(file, tmpfile)
+    end
     nothing
 end

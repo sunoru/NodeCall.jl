@@ -8,7 +8,7 @@ algorithm = "aes-192-cbc"
 password = "some password"
 
 # Very important: let arrays be passed by value to let node handle the memory.
-# TODO: make this not necessary.
+# because `crypto` doesn't work with external `ArrayBuffer`s.
 set_copy_array(true)
 
 ch = Channel{String}(1)

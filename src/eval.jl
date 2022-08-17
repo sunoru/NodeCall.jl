@@ -24,7 +24,8 @@ const DYNAMIC_IMPORT = "__jlnode_import"
 @global_node_const _RUN_IN_VM = """(vm, script, context) => {
     return vm.runInContext(script, context, {
         importModuleDynamically(m) {
-            return $(DYNAMIC_IMPORT)(m)
+            const dynamicImport = context.$(DYNAMIC_IMPORT) || $(DYNAMIC_IMPORT)
+            return dynamicImport(m)
         }
     })
 }"""

@@ -1,8 +1,8 @@
 using NodeCall
 
+cd(@__DIR__)
 NodeCall.initialize()
 
-cd(@__DIR__)
 NPM.install()
 
 const puppeteer = require("puppeteer")
