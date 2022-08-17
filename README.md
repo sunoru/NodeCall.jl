@@ -16,20 +16,19 @@ You need to have Julia v1.7+ installed to use this package.
 
 ## Installation
 
-`NodeCall.jl` has not been registered yet, so you need to manually install it by its git source:
-
 ```julia
-(v1.7) pkg> add https://github.com/sunoru/NodeCall.jl
+] add NodeCall
 ```
 
-You can then run the tests by:
+It's recommended to test the package before using it:
 ```julia
-(v1.7) pkg> test NodeCall
+] test NodeCall
 ```
 
 ## Usage
 
-With `using NodeCall`, a NodeJS instance will start in the current process. A new V8 Virtual Machine context
+With `NodeCall.initialize()`, a NodeJS instance will start in the current process.
+A new V8 Virtual Machine context
 ([`vm`](https://nodejs.org/docs/latest-v16.x/api/vm.html) in the standard library of NodeJS)
 is automatically created.
 
@@ -39,10 +38,13 @@ And JavaScript code can be run with `node_eval` or `@node_str`
 ```julia
 julia> using NodeCall
 
+# This is not required if you are using NodeCall from REPL.
+julia> NodeCall.initialize();
+
 julia> node_eval("console.log('Hello, world!')")
 Hello, world!
 
-julia> x = 5
+julia> x = 5;
 julia> node"2 * $x"
 10.0
 ```
@@ -55,7 +57,7 @@ julia> os.type()
 "Linux"
 ```
 
-To install a NPM package, use something like this:
+To install a package from NPM, use something like this:
 ```julia
 julia> NPM.install("boxen");
 
@@ -73,7 +75,7 @@ And then you can use the installed package as if you are writing JavaScript.
 In this example, `node_import` or `@node_import` should be used since `boxen` is an ES Module.
 
 ```julia
-# `node_import` is like the function-like dynamic import in js, so it is asynchronous and should be awaited.
+# `node_import` is like the function-like dynamic import in JS, so it is asynchronous and should be awaited.
 julia> boxen = (@await node_import("boxen")).default;
 
 # or you can use module style import declaration with `@node_import` macro.
