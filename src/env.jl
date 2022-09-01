@@ -45,7 +45,7 @@ function initialize(env=nothing; node_args=String[])
     _NODE_UVLOOP[] = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
     ret = @ccall :libjlnode.initialize(
         _NODE_UVLOOP[]::Ptr{Cvoid},
-        pointer_from_objref(NodeCall)::Ptr{Cvoid}
+        _jlnode_util_functions()::_JlnodeUtilFunctions
     )::Cint
     @assert ret == 0
     @debug "Initializing NodeJS..."

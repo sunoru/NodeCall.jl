@@ -19,4 +19,5 @@ include("test_common.jl")
     include("internals.jl")
 
     NodeCall.dispose()
+    GC.gc()
 end

@@ -67,7 +67,6 @@ function arraybuffer_finalizer(ptr)
     dereference(ptr)
     haskey(ExternalArrayBuffers, ptr) || return
     delete!(ExternalArrayBuffers, ptr)
-    nothing
 end
 
 function _create_external_arraybuffer(v::TypedCompatibleArray, byte_length)

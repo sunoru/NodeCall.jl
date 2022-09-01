@@ -50,4 +50,35 @@ end
 function jlnode_call_threadsafe(f_ptr::Ptr{Cvoid})
     f = get_reference(f_ptr)[]
     f()
+    nothing
 end
+
+jlnode_external_finalizer(ptr::Ptr{Cvoid}) = (external_finalizer(ptr); nothing)
+jlnode_object_finalizer(f_ptr::Ptr{Cvoid}, data_ptr::Ptr{Cvoid}) = (object_finalizer(f_ptr, data_ptr); nothing)
+jlnode_arraybuffer_finalizer(ptr::Ptr{Cvoid}) = (arraybuffer_finalizer(ptr); nothing)
+
+struct _JlnodeUtilFunctions
+    jl_yield::Ptr{Cvoid}
+    propertynames::Ptr{Cvoid}
+    getproperty::Ptr{Cvoid}
+    setproperty::Ptr{Cvoid}
+    hasproperty::Ptr{Cvoid}
+    external_finalizer::Ptr{Cvoid}
+    object_finalizer::Ptr{Cvoid}
+    arraybuffer_finalizer::Ptr{Cvoid}
+    call_function::Ptr{Cvoid}
+    call_threadsafe::Ptr{Cvoid}
+end
+
+const _jlnode_util_functions() = _JlnodeUtilFunctions(
+    cglobal(:jl_yield),
+    @cfunction(jlnode_propertynames, NapiValue, (Ptr{Cvoid},)),
+    @cfunction(jlnode_getproperty, NapiValue, (Ptr{Cvoid}, Ptr{Cvoid})),
+    @cfunction(jlnode_setproperty!, NapiValue, (Ptr{Cvoid}, Ptr{Cvoid}, Ptr{Cvoid})),
+    @cfunction(jlnode_hasproperty, NapiValue, (Ptr{Cvoid}, Ptr{Cvoid})),
+    @cfunction(jlnode_external_finalizer, Cvoid, (Ptr{Cvoid},)),
+    @cfunction(jlnode_object_finalizer, Cvoid, (Ptr{Cvoid}, Ptr{Cvoid})),
+    @cfunction(jlnode_arraybuffer_finalizer, Cvoid, (Ptr{Cvoid},)),
+    @cfunction(call_function, NapiValue, (Ptr{Cvoid}, Ptr{Cvoid}, Csize_t, Ptr{Cvoid})),
+    @cfunction(jlnode_call_threadsafe, Cvoid, (Ptr{Cvoid},))
+)

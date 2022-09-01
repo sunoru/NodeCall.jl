@@ -32,7 +32,6 @@ export this
 export @node_async, state, result
 export node_throw
 include("types/errors.jl")
-include("types/jlnode_helpers.jl")
 include("types/common.jl")
 include("types/primitives.jl")
 include("types/objects.jl")
@@ -40,6 +39,7 @@ include("types/arrays.jl")
 include("types/functions.jl")
 include("types/externals.jl")
 include("types/promises.jl")
+include("types/jlnode_helpers.jl")
 
 export current_context, new_context, delete_context, switch_context, list_contexts
 include("contexts.jl")

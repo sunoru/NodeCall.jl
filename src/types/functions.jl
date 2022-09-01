@@ -46,27 +46,23 @@ function call_function(
     func_ptr::Ptr{Cvoid},
     args_ptr::Ptr{Cvoid},
     argc::Csize_t,
-    recv::Ptr{Cvoid},
-    result::Ptr{Cvoid}
+    recv::Ptr{Cvoid}
 )
-    result = convert(Ptr{NapiValue}, result)
     func = get_reference(func_ptr)[]
     args_ptr = Ptr{NapiValue}(args_ptr)
     args = [value(unsafe_load(args_ptr, i)) for i in 1:argc]
     this = convert(NapiValue, recv) |> value
+    tls = task_local_storage()
+    thises = get!(tls, :jlnode_this) do
+        Any[]
+    end
+    push!(thises, this)
     try
-        tls = task_local_storage()
-        thises = get!(tls, :jlnode_this) do
-            Any[]
-        end
-        push!(thises, this)
         r = NapiValue(func(args...))
-        unsafe_store!(result, r)
-        r
+        return r
     catch e
         node_throw(e)
-        unsafe_store!(result, C_NULL)
-        nothing
+        return reinterpret(NapiValue, C_NULL)
     finally
         pop!(thises)
     end

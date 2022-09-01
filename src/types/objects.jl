@@ -273,7 +273,7 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
 end
 
 object_finalizer(f_ptr, data_ptr) = if initialized()
-    f = value(dereference(f_ptr))
+    f = dereference(f_ptr)[]
     data = dereference(data_ptr)
     f(value(data))
 end
