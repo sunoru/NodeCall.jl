@@ -35,7 +35,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workflow: build.yml
-          name: ${{ matrix.os }}-dist
+          name: ${{ runner.os }}-dist
           path: jlnode
           repo: sunoru/jlnode
       - name: Set up latest jlnode
