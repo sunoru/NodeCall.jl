@@ -16,9 +16,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        julia-version: ["1.7"]  # , nightly]
+        julia-version: ["1.7", "1.8", nightly]
         julia-arch: [x64]
-        os: [ubuntu-latest]  # , macOS-latest, windows-latest]
+        os: [ubuntu-latest, macOS-latest] # , windows-latest]
 
     steps:
       - name: Checkout repository
