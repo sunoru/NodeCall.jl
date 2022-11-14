@@ -273,9 +273,12 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
 end
 
 object_finalizer(f_ptr, data_ptr) = if initialized()
-    f = dereference(f_ptr)[]
-    data = dereference(data_ptr)
-    f(value(data))
+    try
+        f = dereference(f_ptr)[]
+        data = dereference(data_ptr)
+        f(value(data))
+    catch
+    end
 end
 
 macro new(expr)
