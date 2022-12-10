@@ -71,7 +71,7 @@ end
 function napi_value(f::Function; name=nothing)
     func_ptr = pointer(reference(f))
     name = isnothing(name) ? C_NULL : name
-    nv = @napi_call create_function(func_ptr::Ptr{Cvoid}, name::Cstring)::NapiValue
+    nv = @napi_call libjlnode.create_function(func_ptr::Ptr{Cvoid}, name::Cstring)::NapiValue
     add_finalizer!(nv, dereference, func_ptr)
     nv
 end

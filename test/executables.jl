@@ -1,5 +1,4 @@
-include("test_common.jl")
-using Random
+using Test, NodeCall
 using Suppressor
 
 @testset "executables" begin

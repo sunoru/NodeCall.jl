@@ -72,7 +72,7 @@ end
 function _create_external_arraybuffer(v::TypedCompatibleArray, byte_length)
     ptr = Ptr{Cvoid}(pointer(v))
     no = get!(ExternalArrayBuffers, ptr) do
-        nv = @napi_call create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
+        nv = @napi_call libjlnode.create_external_arraybuffer(ptr::Ptr{Cvoid}, byte_length::Csize_t)::NapiValue
         NodeObject(nv)
     end
     napi_value(no)

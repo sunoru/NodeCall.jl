@@ -84,7 +84,10 @@ function ensure_dynamic_import(path=pwd(); context=nothing)
     mv(tmpfile, file)
     try
         write(file, IMPORT_UTIL_SOURCE_TEXT)
-        node_eval("(() => {globalThis.$(DYNAMIC_IMPORT) = require('$(file)').node_import})()", context=context)
+        f = node_eval("(file) => {
+            globalThis.$(DYNAMIC_IMPORT) = require(file).node_import
+        }", context = context)
+        f(file, context = context)
     finally
         mv(file, tmpfile)
     end
