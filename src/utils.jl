@@ -17,7 +17,7 @@ function _napi_call(expr, env = nothing; force_sync=false)
     fname, libname = if p isa Expr && p.head ≡ :.
         p.args[2], QuoteNode(p.args[1])
     else
-        QuoteNode(p), :(:libnode)
+        QuoteNode(p), :(NodeCall.libnode)
     end
     args = invocation_expr.args[2:end]
     argtypes = :((NapiEnv,))

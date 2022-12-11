@@ -49,7 +49,6 @@ node_value_finalizer(v::NodeObject) = if initialized()
 end
 node_value_finalizer(v::NodeValueTemp) = if initialized()
     t = getfield(v, :tempname)
-    ccall(:jl_safe_printf, Cvoid, (Cstring, Cstring), "Finalizing %s.", repr(t))
     if t != ""
         try
             delete!(get_tempvar(), t)
