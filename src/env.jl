@@ -23,7 +23,7 @@ end
 # HELP WANTED: https://github.com/sunoru/NodeCall.jl/issues/1
 function run_node_uvloop(mode::UvRunMode=UV_RUN_DEFAULT)
     node_loop = node_uvloop()
-    @ccall :libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
+    @ccall libjlnode.node_uv_run(node_loop::Ptr{Cvoid}, mode::UvRunMode)::Cint
 end
 
 """
@@ -43,7 +43,7 @@ function initialize(env=nothing; node_args=String[])
     end
     _NODE_ENV[] = env
     _NODE_UVLOOP[] = @napi_call env napi_get_uv_event_loop()::Ptr{Cvoid}
-    ret = @ccall :libjlnode.initialize(
+    ret = @ccall libjlnode.initialize(
         _NODE_UVLOOP[]::Ptr{Cvoid},
         _jlnode_util_functions()::_JlnodeUtilFunctions
     )::Cint
@@ -65,7 +65,7 @@ function dispose()
     !initialized() && return
     @debug "Disposing NodeJS..."
     _INITIALIZED[] = false
-    ret = @ccall :libjlnode.dispose()::Cint
+    ret = @ccall libjlnode.dispose()::Cint
     @assert ret == 0
     @debug "NodeJS disposed."
 end
@@ -74,7 +74,7 @@ function start_node(args=String[])
     initialized() && return
     @debug "Starting NodeJS instance..."
     env = Ref{NapiEnv}()
-    ret = @ccall :libjlnode.start_node(
+    ret = @ccall libjlnode.start_node(
         jlnode_addon::Cstring,
         args::Ptr{Cstring},
         length(args)::Csize_t,
