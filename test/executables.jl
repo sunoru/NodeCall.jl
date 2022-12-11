@@ -11,7 +11,8 @@ using Suppressor
     wait.(ps)
     @suppress npx("--version")
     @suppress NPM.init("-y")
-    @suppress NPM.install("canvas") do p
+    # @suppress NPM.install("canvas") do p
+    NPM.install("canvas") do p
         wait(p)
     end
     @test NPM.is_installed("canvas")
