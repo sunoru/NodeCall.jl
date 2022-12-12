@@ -5,7 +5,7 @@
 
 Call NodeJS from Julia.
 
-Currently supports NodeJS v18 (Latest LTS) on 64-bit Linux platforms.
+Currently supports NodeJS v18 (Latest LTS) on 64-bit Linux and macOS platforms.
 
 ## Dependency
 
