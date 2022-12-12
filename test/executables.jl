@@ -11,10 +11,10 @@ using Suppressor
     wait.(ps)
     @suppress npx("--version")
     @suppress NPM.init("-y")
-    # @suppress NPM.install("canvas") do p
-    NPM.install("canvas") do p
+    @suppress NPM.install("bcrypt") do p
+    NPM.install("bcrypt") do p
         wait(p)
     end
-    @test NPM.is_installed("canvas")
-    @test NPM.is_installed("canvas"; is_global=true) isa Bool
+    @test NPM.is_installed("bcrypt")
+    @test NPM.is_installed("bcrypt"; is_global=true) isa Bool
 end

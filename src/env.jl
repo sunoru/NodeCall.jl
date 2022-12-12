@@ -34,7 +34,7 @@ Must be called in the main thread.
 function initialize(env=nothing; node_args=String[])
     initialized() && return
     _GLOBAL_TASK[] = current_task()
-    Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL)
+    Libdl.dlopen(libnode, Libdl.RTLD_GLOBAL | Libdl.RTLD_LAZY | Libdl.RTLD_DEEPBIND)
     _STARTED_FROM_NODE[] = !isnothing(env)
     env = if started_from_node()
         reinterpret(NapiEnv, UInt64(env))
