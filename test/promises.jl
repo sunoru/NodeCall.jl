@@ -34,13 +34,15 @@ using Dates
     @test_throws NodeError wait(p4)
     @test istaskfailed(p4)
 
-    t = now()
-    jl_task = @async sleep(3)
+    jl_task = @async begin
+        t = now()
+        sleep(3)
+        @test now() - t ≤ Millisecond(3500)
+    end
     node_sleep = @node_async sleep(1)
     # `node_sleep` should not block `jl_task`
     wait(node_sleep)
     # Neither should `js_sleep`
     wait(js_sleep(1000))
     wait(jl_task)
-    @test now() - t ≤ Millisecond(3500)
 end
