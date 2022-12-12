@@ -28,12 +28,9 @@ function threadsafe_call(func, T::Type=Any; force_sync=false)
     cf = pointer(reference(wrapper))
     env = node_env()
     try
-        status = ccall(
-            (:threadsafe_call, :libjlnode),
-            NapiTypes.NapiStatus,
-            (NapiTypes.NapiEnv, Ptr{Cvoid}),
-            env, cf
-        )
+        status = @ccall libjlnode.threadsafe_call(
+            env::NapiTypes.NapiEnv, cf::Ptr{Cvoid}
+        )::NapiTypes.NapiStatus
         if status ≢ NapiTypes.napi_ok
             throw_error(env)
         end
