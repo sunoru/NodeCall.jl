@@ -12,7 +12,6 @@ using Suppressor
     @suppress npx("--version")
     @suppress NPM.init("-y")
     @suppress NPM.install("bcrypt") do p
-    NPM.install("bcrypt") do p
         wait(p)
     end
     @test NPM.is_installed("bcrypt")
