@@ -62,7 +62,7 @@ end
 const COPY_ARRAY = Ref(false)
 set_copy_array(copy::Bool) = COPY_ARRAY[] = copy
 
-const ExternalArrayBuffers = Dict{Ptr{Cvoid}, NodeObject}()
+const ExternalArrayBuffers = Dict{Ptr{Cvoid},NodeObject}()
 function arraybuffer_finalizer(ptr)
     dereference(ptr)
     haskey(ExternalArrayBuffers, ptr) || return
@@ -101,36 +101,37 @@ end
 function napi_value(
     v::TypedCompatibleArray{T};
     copy_array=COPY_ARRAY[], typedarray_type=nothing
-) where T
+) where {T}
     isnothing(typedarray_type) || return _napi_value(v, typedarray_type; copy_array=copy_array)
     _napi_value(v, if T == Int8
-        NapiTypes.napi_int8_array
-    elseif T == UInt8
-        NapiTypes.napi_uint8_array
-    elseif T == Int16
-        NapiTypes.napi_int16_array
-    elseif T == UInt16
-        NapiTypes.napi_uint16_array
-    elseif T == Int32
-        NapiTypes.napi_int32_array
-    elseif T == UInt32
-        NapiTypes.napi_uint32_array
-    elseif T == Float32
-        NapiTypes.napi_float32_array
-    elseif T == Float64
-        NapiTypes.napi_float64_array
-    elseif T == Int64
-        NapiTypes.napi_bigint64_array
-    elseif T == UInt64
-        NapiTypes.napi_biguint64_array
-    else
-        nothing
-    end; copy_array=copy_array)
+            NapiTypes.napi_int8_array
+        elseif T == UInt8
+            NapiTypes.napi_uint8_array
+        elseif T == Int16
+            NapiTypes.napi_int16_array
+        elseif T == UInt16
+            NapiTypes.napi_uint16_array
+        elseif T == Int32
+            NapiTypes.napi_int32_array
+        elseif T == UInt32
+            NapiTypes.napi_uint32_array
+        elseif T == Float32
+            NapiTypes.napi_float32_array
+        elseif T == Float64
+            NapiTypes.napi_float64_array
+        elseif T == Int64
+            NapiTypes.napi_bigint64_array
+        elseif T == UInt64
+            NapiTypes.napi_biguint64_array
+        else
+            nothing
+        end; copy_array=copy_array)
 end
 napi_value(v::AbstractArray) = _napi_value(v, nothing)
 
-const UnsafelyWrapped = Dict{Ptr{Cvoid}, NodeObject}()
-array_finalizer(arr) = if initialized()
+const UnsafelyWrapped = Dict{Ptr{Cvoid},NodeObject}()
+function array_finalizer(arr)
+    initialized() || return
     ptr = Ptr{Cvoid}(pointer(arr))
     haskey(UnsafelyWrapped, ptr) || return
     ref = UnsafelyWrapped[ptr]
@@ -138,7 +139,8 @@ array_finalizer(arr) = if initialized()
         delete!(UnsafelyWrapped, ptr)
     end
 end
-function unsafe_wrap_array(nv::NapiValue, ::Type{T}, data::Ptr, len) where T
+
+function unsafe_wrap_array(nv::NapiValue, ::Type{T}, data::Ptr, len) where {T}
     ptr = Ptr{Cvoid}(data)
     ref = if haskey(UnsafelyWrapped, ptr)
         ref = UnsafelyWrapped[ptr]
@@ -151,53 +153,55 @@ function unsafe_wrap_array(nv::NapiValue, ::Type{T}, data::Ptr, len) where T
     arr = unsafe_wrap(Array{T}, Ptr{T}(data), len, own=own)
     finalizer(array_finalizer, arr)
 end
+
 Base.Array(v::ValueTypes) = value(Array, v)
-value(::Type{T}, v::NapiValue) where T <: AbstractArray = T(value(Array, v))
+value(::Type{T}, v::NapiValue) where {T<:AbstractArray} = T(value(Array, v))
 value(
     ::Type{Array}, v::NapiValue;
     array_type=nothing
-) = if array_type == :typedarray || isnothing(array_type) && is_typedarray(v)
-    info = get_array_info(v, :typedarray)
-    T = if info.type == NapiTypes.napi_int8_array
-        Int8
-    elseif info.type == NapiTypes.napi_uint8_array || info.type == NapiTypes.napi_uint8_clamped_array
-        UInt8
-    elseif info.type == NapiTypes.napi_int16_array
-        Int16
-    elseif info.type == NapiTypes.napi_uint16_array
-        UInt16
-    elseif info.type == NapiTypes.napi_int32_array
-        Int32
-    elseif info.type == NapiTypes.napi_uint32_array
-        UInt32
-    elseif info.type == NapiTypes.napi_float32_array
-        Float32
-    elseif info.type == NapiTypes.napi_float64_array
-        Float64
-    elseif info.type == NapiTypes.napi_bigint64_array
-        Int64
-    elseif info.type == NapiTypes.napi_biguint64_array
-        UInt64
+) =
+    if array_type == :typedarray || isnothing(array_type) && is_typedarray(v)
+        info = get_array_info(v, :typedarray)
+        T = if info.type == NapiTypes.napi_int8_array
+            Int8
+        elseif info.type == NapiTypes.napi_uint8_array || info.type == NapiTypes.napi_uint8_clamped_array
+            UInt8
+        elseif info.type == NapiTypes.napi_int16_array
+            Int16
+        elseif info.type == NapiTypes.napi_uint16_array
+            UInt16
+        elseif info.type == NapiTypes.napi_int32_array
+            Int32
+        elseif info.type == NapiTypes.napi_uint32_array
+            UInt32
+        elseif info.type == NapiTypes.napi_float32_array
+            Float32
+        elseif info.type == NapiTypes.napi_float64_array
+            Float64
+        elseif info.type == NapiTypes.napi_bigint64_array
+            Int64
+        elseif info.type == NapiTypes.napi_biguint64_array
+            UInt64
+        else
+            UInt8 # should not be here
+        end
+        unsafe_wrap_array(v, T, info.data, info.length)
+    elseif array_type == :arraybuffer || isnothing(array_type) && is_arraybuffer(v)
+        info = get_array_info(v, :arraybuffer)
+        unsafe_wrap_array(v, UInt8, info.data, info.length)
+    elseif array_type == :buffer || isnothing(array_type) && is_buffer(v)
+        info = get_array_info(v, :buffer)
+        unsafe_wrap_array(v, UInt8, info.data, info.length)
+    elseif array_type == :dataview || isnothing(array_type) && is_dataview(v)
+        info = get_array_info(v, :dataview)
+        unsafe_wrap_array(v, UInt8, info.data, info.length)
     else
-        UInt8 # should not be here
+        len = length(v)
+        [v[i] for i in 0:len-1]
     end
-    unsafe_wrap_array(v, T, info.data, info.length)
-elseif array_type == :arraybuffer || isnothing(array_type) && is_arraybuffer(v)
-    info = get_array_info(v, :arraybuffer)
-    unsafe_wrap_array(v, UInt8, info.data, info.length)
-elseif array_type == :buffer || isnothing(array_type) && is_buffer(v)
-    info = get_array_info(v, :buffer)
-    unsafe_wrap_array(v, UInt8, info.data, info.length)
-elseif array_type == :dataview || isnothing(array_type) && is_dataview(v)
-    info = get_array_info(v, :dataview)
-    unsafe_wrap_array(v, UInt8, info.data, info.length)
-else
-    len = length(v)
-    [v[i] for i in 0:len-1]
-end
 
 Base.Tuple(v::ValueTypes) = value(Tuple, v)
-value(::Type{T}, v::NapiValue) where T <: Tuple = T(value(Tuple, v))
+value(::Type{T}, v::NapiValue) where {T<:Tuple} = T(value(Tuple, v))
 value(::Type{Tuple}, v::NapiValue) = @with_scope begin
     len = length(v)
     Tuple(v[i] for i in 0:len-1)

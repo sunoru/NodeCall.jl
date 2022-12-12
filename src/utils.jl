@@ -1,4 +1,4 @@
-function _napi_call(expr, env = nothing; force_sync=false)
+function _napi_call(expr, env=nothing; force_sync=false)
     define_vars = if env ≡ nothing
         env = :env
         quote
@@ -58,7 +58,7 @@ macro napi_call(expr)
     _napi_call(expr)
 end
 
-function throw_error(env::NapiEnv = node_env())
+function throw_error(env::NapiEnv=node_env())
     info = @napi_call env napi_get_last_error_info()::Ptr{NapiExtendedErrorInfo}
     is_exception_pending = @napi_call env napi_is_exception_pending()::Bool
     err = if is_exception_pending
@@ -92,10 +92,11 @@ function open_scope()
     end
 end
 
-close_scope(scope::Union{Nothing, NapiHandleScope}) = if !isnothing(scope)
-    @napi_call napi_close_handle_scope(scope::NapiHandleScope)
-    pop!(_SCOPE_STACK, scope)
-end
+close_scope(scope::Union{Nothing,NapiHandleScope}) =
+    if !isnothing(scope)
+        @napi_call napi_close_handle_scope(scope::NapiHandleScope)
+        pop!(_SCOPE_STACK, scope)
+    end
 
 function open_scope(f)
     scope = open_scope()
@@ -106,10 +107,12 @@ function open_scope(f)
     end
 end
 macro with_scope(code)
-    esc(:(open_scope() do _
-        $code
-    end))
+    esc(:(
+        open_scope() do _
+            $code
+        end
+    ))
 end
 
-string_pointer(ptr::Ptr) = string("0x", string(UInt64(ptr), base = 16))
+string_pointer(ptr::Ptr) = string("0x", string(UInt64(ptr), base=16))
 string_pointer(o) = string_pointer(pointer_from_objref(o))

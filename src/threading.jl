@@ -5,7 +5,7 @@ const _THREADSAFE_RUNNING_SYMBOL = :JLNODE_TF_RUNNING
 
 Call a zero-argument function in a threadsafe manner. You can specify the type of the return value.
 """
-function threadsafe_call(func, T::Type=Any; force_sync=false)
+function threadsafe_call(@nospecialize(func::Function), T::Type=Any; force_sync=false)
     if force_sync || current_task() ≡ _GLOBAL_TASK[]
         return func()
     end
@@ -64,9 +64,9 @@ function _make_threadsafe(expr::Expr, T)
         T = isnothing(T) ? :Any : esc(T)
         :(
             threadsafe_call(
-                () -> $(esc(expr)),
-                $T
-            )
+            () -> $(esc(expr)),
+            $T
+        )
         )
     end
 end

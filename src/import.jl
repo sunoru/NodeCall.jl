@@ -11,7 +11,7 @@ function require(
     if isnothing(path)
         node_eval("globalThis.require('$(id)')", result)
     else
-        _REQUIRE_IN_PATH(id, path; result = result)
+        _REQUIRE_IN_PATH(id, path; result=result)
     end
 end
 
@@ -48,6 +48,7 @@ function _import_symbols(id::String, imports::Expr)
     push!(expr.args, :nothing)
     esc(expr)
 end
+
 """
     foo = @await @node_import "foo"
     @node_import foo from "foo"
@@ -86,8 +87,8 @@ function ensure_dynamic_import(path=pwd(); context=nothing)
         write(file, IMPORT_UTIL_SOURCE_TEXT)
         f = node_eval("(file) => {
             globalThis.$(DYNAMIC_IMPORT) = require(file).node_import
-        }", context = context)
-        f(file, context = context)
+        }", context=context)
+        f(file, context=context)
     finally
         mv(file, tmpfile)
     end

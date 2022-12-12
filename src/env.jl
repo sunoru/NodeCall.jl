@@ -15,9 +15,9 @@ initialized() = _INITIALIZED[]
 started_from_node() = _STARTED_FROM_NODE[]
 
 @enum UvRunMode begin
-  UV_RUN_DEFAULT = 0
-  UV_RUN_ONCE
-  UV_RUN_NOWAIT
+    UV_RUN_DEFAULT = 0
+    UV_RUN_ONCE
+    UV_RUN_NOWAIT
 end
 # It has to been called manually for now.
 # HELP WANTED: https://github.com/sunoru/NodeCall.jl/issues/1

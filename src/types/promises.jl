@@ -19,11 +19,11 @@ JsPromise(ref::NodeObject) = @with_scope begin
     elseif state == promise_pending
         resolve = (x) -> begin
             setfield!(promise, :state, promise_fulfilled)
-            setfield!(promise, :result, x);
+            setfield!(promise, :result, x)
         end
         reject = (x) -> begin
             setfield!(promise, :state, promise_rejected)
-            setfield!(promise, :result, x);
+            setfield!(promise, :result, x)
         end
         _JS_WRAP_PROMISE(promise, resolve, reject; result=RESULT_RAW)
     end
@@ -96,7 +96,7 @@ Base.wait(promise::ValueTypes) = (fetch(promise); nothing)
 })"
 macro node_async(expr)
     letargs = Base._lift_one_interp!(expr)
-    thunk = esc(:(()->($expr)))
+    thunk = esc(:(() -> ($expr)))
     quote
         let $(letargs...)
             _JS_MAKE_ASYNC($thunk)

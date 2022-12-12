@@ -1,7 +1,7 @@
 module NPM
 
 using JSON
-using NodeCall: @npm_cmd
+using ..NodeCall: @npm_cmd
 
 const COMMANDS = let o = 0
     commands = String[]
@@ -23,7 +23,7 @@ const COMMANDS = let o = 0
 end
 
 for cmd in COMMANDS
-    cmd_sym = Symbol(replace(cmd, '-'=>'_'))
+    cmd_sym = Symbol(replace(cmd, '-' => '_'))
     @eval function $cmd_sym(args...; wait=true)
         cmd = @npm_cmd($cmd)
         append!(cmd.exec, filter(!isempty, args))
@@ -41,15 +41,17 @@ for cmd in COMMANDS
     end
 end
 
-installed_packages(is_global=false) = NPM.ls("--depth=0", "--json", is_global ? "--location=global" : "") do json
-    data = JSON.parse(json)
-    Base.get(data, "dependencies", Dict{String, Any}())
-end
+installed_packages(is_global=false) =
+    NPM.ls("--depth=0", "--json", is_global ? "--location=global" : "") do json
+        data = JSON.parse(json)
+        Base.get(data, "dependencies", Dict{String,Any}())
+    end
 
-is_installed(pkg; is_global=nothing) = if isnothing(is_global)
-    is_installed(pkg; is_global=false) || is_installed(pkg; is_global=true)
-else
-    pkg in keys(installed_packages(is_global))
-end
+is_installed(pkg; is_global=nothing) =
+    if isnothing(is_global)
+        is_installed(pkg; is_global=false) || is_installed(pkg; is_global=true)
+    else
+        pkg in keys(installed_packages(is_global))
+    end
 
 end

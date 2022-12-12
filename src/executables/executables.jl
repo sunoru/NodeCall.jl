@@ -15,21 +15,27 @@ function cmd_gen(args...)
 end
 
 macro node_cmd(args)
-    :(let cmd = @cmd $args
-        cmd_gen(cmd)
-    end)
+    quote
+        let cmd = @cmd $args
+            cmd_gen(cmd)
+        end
+    end
 end
 
 macro npm_cmd(args)
-    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npm-cli.js")
-        cmd_gen(jsfile, cmd)
-    end)
+    quote
+        let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npm-cli.js")
+            cmd_gen(jsfile, cmd)
+        end
+    end
 end
 
 macro npx_cmd(args)
-    :(let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npx-cli.js")
-        cmd_gen(jsfile, cmd)
-    end)
+    quote
+        let cmd = @cmd($args), jsfile = joinpath(NPM_DIR, "bin", "npx-cli.js")
+            cmd_gen(jsfile, cmd)
+        end
+    end
 end
 
 function npx(args...)

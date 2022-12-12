@@ -1,4 +1,4 @@
-struct NodeError{T <: NodeValue} <: NodeValue
+struct NodeError{T<:NodeValue} <: NodeValue
     o::T
 end
 NodeError(value::NapiValue) = NodeError(node_value(value))
@@ -24,6 +24,7 @@ function node_throw(x)
     err = ErrorException(sprint(showerror, x))
     node_throw(err)
 end
+
 napi_value(err::Exception) = @napi_call napi_create_error(
     C_NULL::NapiValue, sprint(showerror, err)::NapiValue
 )::NapiValue

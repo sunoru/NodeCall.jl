@@ -6,7 +6,8 @@
     RESULT_NODE
     RESULT_VALUE
 end
-function with_result(f, type::ResultType=RESULT_VALUE; this=nothing)
+
+function with_result(@nospecialize(f), type::ResultType=RESULT_VALUE; this=nothing)
     scope = type == RESULT_RAW ? nothing : open_scope()
     result = f()
     ret = if type == RESULT_RAW
@@ -47,7 +48,7 @@ the most suitable Julia type before being returned.
 function node_eval(
     script::AbstractString,
     result=RESULT_VALUE;
-    context=current_context(),
+    context=current_context()
 )
     script = strip(script)
     script = if startswith(script, '{')
@@ -60,7 +61,7 @@ function node_eval(
             @napi_call napi_run_script(script::NapiValue)::NapiValue
         end
     else
-        _RUN_IN_VM(_VM, script, context; result = result)
+        _RUN_IN_VM(_VM, script, context; result=result)
     end
 end
 
@@ -82,9 +83,7 @@ const _INTERPOLATE_FSM = Dict(
     ('\'', '\'') => 'p',
     ('"', '"') => 'p',
     ('`', '`') => 'p',
-    ('p', '$') => '$',
-
-    ('`', '$') => 'S',
+    ('p', '$') => '$', ('`', '$') => 'S',
     ('p', '/') => '/',
     ('/', '/') => 'c',
     ('/', '*') => 'C',
@@ -210,7 +209,7 @@ macro node_str(code, options...)
     code_expr = Expr(:call, esc(:(Base.string)))
     i0 = firstindex(code)
     for i in sort!(collect([k for k in keys(locals) if k isa Int]))
-        push!(code_expr.args, code[i0:prevind(code,i)], esc(locals[i]))
+        push!(code_expr.args, code[i0:prevind(code, i)], esc(locals[i]))
         i0 = i
     end
     push!(code_expr.args, code[i0:lastindex(code)])

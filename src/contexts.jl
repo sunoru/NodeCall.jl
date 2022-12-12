@@ -1,6 +1,6 @@
 const _CURRENT_CONTEXT = Ref{NodeObject}()
 
-const NodeContexts = Dict{String, NodeObject}()
+const NodeContexts = Dict{String,NodeObject}()
 @global_node_const _VM = "require('vm')"
 @global_node_const _ASSIGN_DEFAULTS = """(() => {
     const defaults = {

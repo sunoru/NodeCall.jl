@@ -20,12 +20,12 @@ abstract type AbstractNapiPointer end
 primitive type NapiPointer <: AbstractNapiPointer 64 end
 primitive type NapiEnv <: AbstractNapiPointer 64 end
 primitive type NapiValue <: AbstractNapiPointer 64 end
-Base.convert(::Type{T}, x::UInt64) where T <: Union{NapiEnv, NapiPointer} = reinterpret(T, x)
-Base.convert(::Type{T}, x::AbstractNapiPointer) where T <: AbstractNapiPointer = reinterpret(T, x)
-Base.convert(::Type{T}, x::NapiPointer) where T <: Ptr = reinterpret(T, x)
-Base.convert(::Type{T}, x::NapiEnv) where T <: Ptr = reinterpret(T, x)
-Base.convert(::Type{T}, x::NapiValue) where T <: Ptr = reinterpret(T, x)
-Base.Ptr{T}(x::NapiPointer) where T = convert(Ptr{T}, x)
+Base.convert(::Type{T}, x::UInt64) where {T<:Union{NapiEnv,NapiPointer}} = reinterpret(T, x)
+Base.convert(::Type{T}, x::AbstractNapiPointer) where {T<:AbstractNapiPointer} = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiPointer) where {T<:Ptr} = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiEnv) where {T<:Ptr} = reinterpret(T, x)
+Base.convert(::Type{T}, x::NapiValue) where {T<:Ptr} = reinterpret(T, x)
+Base.Ptr{T}(x::NapiPointer) where {T} = convert(Ptr{T}, x)
 Base.convert(T::Type{NapiPointer}, x::Ptr) = reinterpret(T, UInt64(x))
 Base.convert(T::Type{NapiEnv}, x::Ptr) = reinterpret(T, UInt64(x))
 Base.convert(T::Type{NapiValue}, x::Ptr) = reinterpret(T, UInt64(x))
@@ -124,7 +124,7 @@ end
 
     # napi_default_method = napi_writable | napi_configurable
     napi_default_method = (1 << 0) | (1 << 2)
-  #   napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
+    #   napi_default_jsproperty = napi_writable | napi_enumerable | napi_configurable
     napi_default_jsproperty = (1 << 0) | (1 << 1) | (1 << 2)
 end
 

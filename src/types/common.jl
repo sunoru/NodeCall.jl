@@ -90,11 +90,12 @@ Base.in(key, o::ValueTypes) = haskey(o, key)
 Base.get(
     o::ValueTypes, key::AbstractString, default=nothing;
     result=RESULT_VALUE
-) = with_result(result, this=o) do
-    nv = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
-    is_undefined(nv) && return default
-    nv
-end
+) =
+    with_result(result, this=o) do
+        nv = @napi_call napi_get_named_property(o::NapiValue, key::Cstring)::NapiValue
+        is_undefined(nv) && return default
+        nv
+    end
 set!(o::ValueTypes, key::AbstractString, value) = @with_scope begin
     nv = napi_value(value)
     @napi_call napi_set_named_property(o::NapiValue, key::Cstring, nv::NapiValue)
@@ -109,11 +110,12 @@ end
 Base.get(
     o::ValueTypes, key::Integer, default=nothing;
     result=RESULT_VALUE
-) = with_result(result, this=o) do
-    nv = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
-    is_undefined(nv) && return default
-    nv
-end
+) =
+    with_result(result, this=o) do
+        nv = @napi_call napi_get_element(o::NapiValue, key::UInt32)::NapiValue
+        is_undefined(nv) && return default
+        nv
+    end
 set!(o::ValueTypes, key::Integer, value) = @with_scope begin
     nv = napi_value(value)
     @napi_call napi_set_element(o::NapiValue, key::UInt32, nv::NapiValue)

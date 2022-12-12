@@ -5,10 +5,10 @@ abstract type NodeValue end
 abstract type JsValue end
 abstract type JsObjectType <: JsValue end
 
-const ValueTypes = Union{NapiValue, NodeValue, JsValue}
+const ValueTypes = Union{NapiValue,NodeValue,JsValue}
 
-Base.convert(::Type{T}, v::T) where T <: ValueTypes = v
-Base.convert(::Type{NapiValue}, v::T) where T = NapiValue(v)
+Base.convert(::Type{T}, v::T) where {T<:ValueTypes} = v
+Base.convert(::Type{NapiValue}, v::T) where {T} = NapiValue(v)
 Base.convert(::Type{NapiValue}, v::ValueTypes) = NapiValue(v)
 NapiValue(v) = napi_value(v)
 napi_value(v::NapiValue) = v
@@ -22,13 +22,13 @@ end
 JsValue(v; this=nothing) = value(v; this=this)
 value(v; this=nothing) = v
 value(v::ValueTypes; this=nothing) = @with_scope value(NapiValue(v), this=this)
-JsValue(::Type{T}, v) where T = value(T, v)
+JsValue(::Type{T}, v) where {T} = value(T, v)
 Base.convert(::Type{Any}, v::ValueTypes) = v
-Base.convert(::Type{T}, v::ValueTypes) where T = value(T, v)
+Base.convert(::Type{T}, v::ValueTypes) where {T} = value(T, v)
 Base.convert(::Type{>:Nothing}, v::ValueTypes) = v
-value(::Type{T}, v::T) where T = v
-value(::Type{T}, v) where T = @with_scope value(T, NapiValue(v))
-value(::Type{T}, v::NapiValue) where T = error("Unimplemented to convert a NapiValue to $T")
+value(::Type{T}, v::T) where {T} = v
+value(::Type{T}, v) where {T} = @with_scope value(T, NapiValue(v))
+value(::Type{T}, v::NapiValue) where {T} = error("Unimplemented to convert a NapiValue to $T")
 
 function value(napi_value::NapiValue; this=nothing)
     t = get_type(napi_value)
@@ -39,7 +39,7 @@ function value(napi_value::NapiValue; this=nothing)
     elseif t == NapiTypes.napi_number
         value(Float64, napi_value)
     elseif t == NapiTypes.napi_string
-        value(String, napi_value; is_string = true)
+        value(String, napi_value; is_string=true)
     elseif t == NapiTypes.napi_symbol
         value(Symbol, napi_value)
     elseif t == NapiTypes.napi_object
@@ -74,7 +74,7 @@ macro global_node_const(def, is_object=true)
         const $name = $typ()
         if !haskey(ObjectReference, _NODE_CONST_SYMBOL)
             ObjectReference[_NODE_CONST_SYMBOL] = Ref(Tuple{
-                Union{NodeObject, NodeValueTemp},
+                Union{NodeObject,NodeValueTemp},
                 String
             }[])
         end

@@ -1,4 +1,4 @@
-struct JsFunction{T <: Union{Nothing, NodeValue}} <: JsObjectType
+struct JsFunction{T<:Union{Nothing,NodeValue}} <: JsObjectType
     ref::NodeObject
     this::T
 end
@@ -77,13 +77,12 @@ function napi_value(f::Function; name=nothing)
 end
 
 # Iterators
-# napi_value(v::AbstractIterator)
 value(::Type{JsIterator}, v::NapiValue) = JsIterator(NodeObject(v))
-function Base.iterate(v::NapiValue, state = nothing; result=RESULT_VALUE)
+function Base.iterate(v::NapiValue, state=nothing; result=RESULT_VALUE)
     iterator = isnothing(state) ? v[_JS_ITERATOR_SYMBOL](result=result) : state
     state = iterator.next(result=result)
     state.done && return nothing
     ret = get(state, "value", nothing; result=result)
     ret, iterator
 end
-Base.iterate(v::ValueTypes, state = nothing) = @with_scope iterate(NapiValue(v), state)
+Base.iterate(v::ValueTypes, state=nothing) = @with_scope iterate(NapiValue(v), state)

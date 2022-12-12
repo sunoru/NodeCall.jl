@@ -13,11 +13,12 @@ macro wrap_get_env(name)
     @eval $func_name() = @napi_call $napi_name()::NapiValue
 end
 
-get_global(context=current_context()) = if isnothing(context)
-    @napi_call napi_get_global()::NapiValue
-else
-    napi_value(context)
-end
+get_global(context=current_context()) =
+    if isnothing(context)
+        @napi_call napi_get_global()::NapiValue
+    else
+        napi_value(context)
+    end
 @wrap_get_env undefined
 @wrap_get_env null
 
@@ -56,14 +57,15 @@ end
 @wrap_get_value int32 Int32
 @wrap_get_value uint32 UInt32
 
-value(::Type{T}, v::NapiValue) where T <: Number = T(value(Float64, v))
-value(::Type{Int64}, v::NapiValue; is_bigint = false) = if is_bigint
-    ret = Ref{Int64}()
-    _lossless = @napi_call napi_get_value_bigint_int64(v::NapiValue, ret::Ptr{Int64})::Bool
-    ret[]
-else
-    @napi_call napi_get_value_int64(v::NapiValue)::Int64
-end
+value(::Type{T}, v::NapiValue) where {T<:Number} = T(value(Float64, v))
+value(::Type{Int64}, v::NapiValue; is_bigint=false) =
+    if is_bigint
+        ret = Ref{Int64}()
+        _lossless = @napi_call napi_get_value_bigint_int64(v::NapiValue, ret::Ptr{Int64})::Bool
+        ret[]
+    else
+        @napi_call napi_get_value_int64(v::NapiValue)::Int64
+    end
 function value(::Type{UInt64}, v::NapiValue)
     ret = Ref{UInt64}()
     _lossless = @napi_call napi_get_value_bigint_uint64(v::NapiValue, ret::Ptr{UInt64})::Bool
@@ -79,17 +81,17 @@ function value(::Type{BigInt}, v::NapiValue)
     hex = bytes2hex(x)
     parse(BigInt, hex, base=16) * (sign_bit[] & 1 == 0 ? 1 : -1)
 end
-function value(::Type{String}, v::NapiValue; is_string = false)
+function value(::Type{String}, v::NapiValue; is_string=false)
     if is_string
         len = @napi_call napi_get_value_string_utf8(v::NapiValue, C_NULL::Ptr{Cchar}, 0::Csize_t)::Csize_t
         buf = zeros(UInt8, len + 1)
         resize!(buf, len)
-        @napi_call napi_get_value_string_utf8(v::NapiValue, buf::Ptr{Cchar}, (len+1)::Csize_t)::Csize_t
+        @napi_call napi_get_value_string_utf8(v::NapiValue, buf::Ptr{Cchar}, (len + 1)::Csize_t)::Csize_t
         String(buf)
     else
         @with_scope begin
             s = to_string(v)
-            value(String, s; is_string = true)
+            value(String, s; is_string=true)
         end
     end
 end

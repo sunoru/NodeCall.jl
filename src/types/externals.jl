@@ -9,7 +9,8 @@ NodeExternal(v) = NodeExternal(pointer(reference(v)))
 NodeExternal(nv::NapiValue) = NodeExternal(@napi_call napi_get_value_external(nv::NapiValue)::Ptr{Cvoid})
 
 Base.pointer(v::NodeExternal) = getfield(v, :ptr)
-value(v::NodeExternal) = let t = get_reference(pointer(v))
+function value(v::NodeExternal)
+    t = get_reference(pointer(v))
     isnothing(t) && return nothing
     t[] isa PointerWrapper && return t[].ptr
     t[]
@@ -31,7 +32,7 @@ function value(::Type{NodeExternal}, nv::NapiValue)
     isnothing(v) ? e : v
 end
 
-# Let `Ptr`s be NodeExternals
+# Let `Ptr`s be `NodeExternal`s
 struct PointerWrapper{T}
     ptr::Ptr{T}
 end

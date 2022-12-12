@@ -100,7 +100,7 @@ function create_object_mutable(x)
     add_finalizer!(v, dereference, ref)
     _JS_OBJECT_PROXY(v; result=RESULT_RAW)
 end
-function create_object_immutable(x::T) where T
+function create_object_immutable(x::T) where {T}
     nv = create_object(result=RESULT_RAW)
     for k in fieldnames(T)
         nv[string(k)] = getfield(x, k)
@@ -108,7 +108,7 @@ function create_object_immutable(x::T) where T
     nv
 end
 
-add_jltype(::Type{T}) where T = NapiPropertyDescriptor(
+add_jltype(::Type{T}) where {T} = NapiPropertyDescriptor(
     utf8name=pointer(_JLTYPE_PROPERTY),
     value=NodeExternal(T),
     attributes=NapiTypes.napi_default
@@ -118,7 +118,7 @@ napi_value(js_object::JsObjectType) = convert(NapiValue, getfield(js_object, :re
 napi_value(v::DateTime) = @napi_call napi_create_date((datetime2unix(v) * 1000)::Cdouble)::NapiValue
 const _JLTYPE_PROPERTY = "__jl_type"
 const _JLPTR_PROPERTY = "__jl_ptr"
-function napi_value(v::T; vtype = nothing) where T
+function napi_value(v::T; vtype=nothing) where {T}
     mut = ismutable(v)
     nv = if vtype ≡ :dict
         create_object_dict(v)
@@ -142,9 +142,9 @@ function napi_value(v::T; vtype = nothing) where T
     define_properties!(nv, ps)
     nv
 end
-napi_value(d::AbstractDict) = napi_value(d, vtype = :dict)
-napi_value(s::AbstractSet) = napi_value(s, vtype = :set)
-napi_value(t::Tuple) = napi_value(t, vtype = :tuple)
+napi_value(d::AbstractDict) = napi_value(d, vtype=:dict)
+napi_value(s::AbstractSet) = napi_value(s, vtype=:set)
+napi_value(t::Tuple) = napi_value(t, vtype=:tuple)
 
 value(::Type{JsObject}, v::NapiValue) = JsObject(NodeObject(v))
 value(::Type{DateTime}, v::NapiValue) = @with_scope begin
@@ -187,15 +187,15 @@ function object_value(v::NapiValue)
     if is_date(v)
         value(DateTime, v)
     elseif is_array(v)
-        value(Array, v; array_type = :array)
+        value(Array, v; array_type=:array)
     elseif is_typedarray(v)
-        value(Array, v; array_type = :typedarray)
+        value(Array, v; array_type=:typedarray)
     elseif is_arraybuffer(v)
-        value(Array, v; array_type = :arraybuffer)
+        value(Array, v; array_type=:arraybuffer)
     elseif is_dataview(v)
-        value(Array, v; array_type = :dataview)
+        value(Array, v; array_type=:dataview)
     elseif is_buffer(v)
-        value(Array, v; array_type = :buffer)
+        value(Array, v; array_type=:buffer)
     elseif is_map(v)
         value(Dict, v)
     elseif is_set(v)
@@ -209,20 +209,28 @@ function object_value(v::NapiValue)
     end
 end
 
-value(::Type{T}, v::NapiValue) where T <: AbstractDict = let dict = value(Dict, v)
-    try return T(dict) catch end
+function value(::Type{T}, v::NapiValue) where {T<:AbstractDict}
+    dict = value(Dict, v)
+    try
+        return T(dict)
+    catch
+    end
     dict
 end
 _dict_value(nv::NapiValue, depth=1) = Dict(
     key => let v = nv[key]
-         depth != 0 && v isa JsObject ? _dict_value(napi_value(v), depth-1) : v
+        depth != 0 && v isa JsObject ? _dict_value(napi_value(v), depth - 1) : v
     end for key in keys(nv)
 )
 value(::Type{Dict}, nv::NapiValue; depth=1) = @with_scope is_map(nv) ? make_dict(nv) : _dict_value(nv, depth)
-value(::Type{T}, v::NapiValue) where T <: AbstractSet = let set = value(Set, v)
-    try return T(set) catch end
-    set
-end
+value(::Type{T}, v::NapiValue) where {T<:AbstractSet} =
+    let set = value(Set, v)
+        try
+            return T(set)
+        catch
+        end
+        set
+    end
 value(::Type{Set}, v::NapiValue) = @with_scope is_set(v) ? make_set(v) : Set(keys(v))
 Base.Dict(v::ValueTypes; depth=2) = @with_scope _dict_value(napi_value(v), depth)
 Base.Set(v::ValueTypes) = value(Set, v)
@@ -256,7 +264,7 @@ function make_set(v::NapiValue)
 end
 
 Base.NamedTuple(v::ValueTypes) = value(NamedTuple, v)
-value(::Type{T}, v::NapiValue) where T <: NamedTuple = @with_scope T(
+value(::Type{T}, v::NapiValue) where {T<:NamedTuple} = @with_scope T(
     v[string(k)] for k in fieldnames(T)
 )
 value(::Type{NamedTuple}, v::NapiValue) = @with_scope NamedTuple(
@@ -272,7 +280,8 @@ function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
     nv
 end
 
-object_finalizer(f_ptr, data_ptr) = if initialized()
+function object_finalizer(f_ptr, data_ptr)
+    initialized() || return
     try
         f = dereference(f_ptr)[]
         data = dereference(data_ptr)

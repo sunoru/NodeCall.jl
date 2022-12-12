@@ -38,32 +38,34 @@ NodeValueTemp(v::NapiValue, tempname=nothing) = @with_scope begin
 end
 value(::Type{NodeValueTemp}, v::NapiValue; tempname=nothing) = NodeValueTemp(v, tempname)
 
-node_value_finalizer(v::NodeObject) = if initialized()
-    ref = getfield(v, :ref)
-    if ref != C_NULL
-        try
-            @napi_call napi_delete_reference(ref::NapiRef)
-        catch
+node_value_finalizer(v::NodeObject) =
+    if initialized()
+        ref = getfield(v, :ref)
+        if ref != C_NULL
+            try
+                @napi_call napi_delete_reference(ref::NapiRef)
+            catch
+            end
         end
     end
-end
-node_value_finalizer(v::NodeValueTemp) = if initialized()
-    t = getfield(v, :tempname)
-    if t != ""
-        try
-            delete!(get_tempvar(), t)
-        catch
+node_value_finalizer(v::NodeValueTemp) =
+    if initialized()
+        t = getfield(v, :tempname)
+        if t != ""
+            try
+                delete!(get_tempvar(), t)
+            catch
+            end
         end
     end
-end
 
 NodeValue(v; kwargs...) = node_value(v; kwargs...)
-Base.convert(::Type{NodeValue}, v::T) where T = NodeValue(v)
-Base.convert(::Type{NodeValue}, v::T) where T <: NodeValue = v
-Base.convert(::Type{Union{Nothing, NodeValue}}, v::T) where T <: NodeValue = v
+Base.convert(::Type{NodeValue}, v::T) where {T} = NodeValue(v)
+Base.convert(::Type{NodeValue}, v::T) where {T<:NodeValue} = v
+Base.convert(::Type{Union{Nothing,NodeValue}}, v::T) where {T<:NodeValue} = v
 function node_value(
     nv::NapiValue;
-    tempname = nothing
+    tempname=nothing
 )
     t = get_type(nv)
     if t ∈ (NapiTypes.napi_object, NapiTypes.napi_function)
