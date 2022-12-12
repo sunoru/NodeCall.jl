@@ -50,7 +50,7 @@ function promise_state(
 )
     state = Ref{PromiseState}()
     result_ = with_result(result) do
-        @napi_call get_promise_state(promise::NapiValue, state::Ptr{PromiseState})::NapiValue
+        @napi_call libjlnode.get_promise_state(promise::NapiValue, state::Ptr{PromiseState})::NapiValue
     end
     state[], result_
 end

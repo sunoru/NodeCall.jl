@@ -94,7 +94,7 @@ end
 create_object_tuple(x) = _napi_value(collect(x))
 function create_object_mutable(x)
     ref = pointer(reference(x))
-    v = @napi_call create_object_mutable(
+    v = @napi_call libjlnode.create_object_mutable(
         ref::Ptr{Cvoid}
     )::NapiValue
     add_finalizer!(v, dereference, ref)
@@ -266,7 +266,7 @@ value(::Type{NamedTuple}, v::NapiValue) = @with_scope NamedTuple(
 function add_finalizer!(nv::NapiValue, f::Function, data=nothing)
     f_ptr = pointer(reference(f))
     data_ptr = isnothing(data) ? C_NULL : pointer(reference(data))
-    @napi_call add_finalizer(
+    @napi_call libjlnode.add_finalizer(
         nv::NapiValue, f_ptr::Ptr{Cvoid}, data_ptr::Ptr{Cvoid}
     )
     nv

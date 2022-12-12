@@ -1,6 +1,10 @@
 using libnode_jll: node as node_cmd_func, artifact_dir
 
-const NPM_DIR = joinpath(artifact_dir, "lib", "node_modules", "npm")
+const NPM_DIR = @static if Sys.iswindows()
+    joinpath(artifact_dir, "bin", "node_modules", "npm")
+else
+    joinpath(artifact_dir, "lib", "node_modules", "npm")
+end
 
 function cmd_gen(args...)
     cmd = node_cmd_func()

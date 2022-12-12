@@ -23,7 +23,7 @@ node_value(v::NodeExternal) = v
 
 external_finalizer(ptr::Ptr{Cvoid}) = dereference(ptr)
 
-napi_value(v::NodeExternal) = @napi_call create_external(pointer(v)::UInt64)::NapiValue
+napi_value(v::NodeExternal) = @napi_call libjlnode.create_external(pointer(v)::UInt64)::NapiValue
 
 function value(::Type{NodeExternal}, nv::NapiValue)
     e = NodeExternal(nv)

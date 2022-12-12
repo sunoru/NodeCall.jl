@@ -1,5 +1,3 @@
-import Pkg
-
 using Test, NodeCall
 
 if !NodeCall.initialized()

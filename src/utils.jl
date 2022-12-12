@@ -13,14 +13,19 @@ function _napi_call(expr, env = nothing; force_sync=false)
     else
         expr, :(status)
     end
-    fname = QuoteNode(invocation_expr.args[1])
+    p = invocation_expr.args[1]
+    fname, libname = if p isa Expr && p.head ≡ :.
+        p.args[2], :(NodeCall.$(p.args[1]))
+    else
+        QuoteNode(p), :(NodeCall.libnode)
+    end
     args = invocation_expr.args[2:end]
     argtypes = :((NapiEnv,))
     for arg in args
         @assert arg.head ≡ :(::) "Every argument should have a type"
         push!(argtypes.args, arg.args[2])
     end
-    ccall_func = :(ccall(($fname, :libjlnode), NapiStatus, $argtypes, $env))
+    ccall_func = :(ccall(($fname, $libname), NapiStatus, $argtypes, $env))
     for arg in args
         push!(ccall_func.args, esc(arg.args[1]))
     end

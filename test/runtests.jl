@@ -1,4 +1,4 @@
-include("test_common.jl")
+using Test, NodeCall
 
 @testset "NodeCall.jl" begin
     include("executables.jl")
