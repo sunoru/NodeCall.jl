@@ -24,6 +24,7 @@ end
     # `string`
     @test node"'a string'" ≡ "a string"
     @test node"x => typeof x === 'string'".(["str", 'c']) |> all
+    @test node"x => x === 'åb'"("åb")
     # `bigint`
     @test node"282278710948156123453635394322245338923n" == 282278710948156123453635394322245338923
     @test node"x => typeof x === 'bigint'"(BigInt(0))
