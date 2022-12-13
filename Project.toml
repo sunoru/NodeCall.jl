@@ -1,7 +1,7 @@
 name = "NodeCall"
 uuid = "84d67a5e-1aa2-4817-a501-81e0ebf70bff"
 authors = ["Sunoru <s@sunoru.com>"]
-version = "1.1.0"
+version = "1.1.1"
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
